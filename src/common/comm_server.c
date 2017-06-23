@@ -11,6 +11,8 @@
 #include <string.h>
 #include <sys/socket.h>
 #include <sys/time.h>
+#include <sys/un.h>
+#include <sys/stat.h>
 
 #include "comm_channel.h"
 #include "comm_utils.h"
@@ -22,22 +24,23 @@
  * Functoin binds the socket and starts listening on it
  */
 int start_listener() {
-    struct sockaddr_in addr;
+    struct sockaddr_un addr;
     int                sock;
 
-    sock = socket(AF_INET, SOCK_STREAM, 0);
+    sock = socket(AF_UNIX, SOCK_STREAM, 0);
     if (sock == -1) {
         lprintf(ERROR, "%s", strerror(errno));
     }
 
-    addr = (struct sockaddr_in){
-        .sin_family = AF_INET,
-        .sin_port   = htons(SERVER_PORT),
-        .sin_addr = {.s_addr = INADDR_ANY},
-    };
+    remove("/opt/share/server.socket");
+    memset(&addr, 0, sizeof(addr));
+    addr.sun_family = AF_UNIX;
+    strcpy(addr.sun_path, "/opt/share/server.socket");
+    
     if (bind(sock, (const struct sockaddr *)&addr, sizeof(addr)) == -1) {
         lprintf(ERROR, "Cannot bind the port: %s", strerror(errno));
     }
+    chmod("/opt/share/server.socket", 0777);
 #ifdef _DEBUG_CLIENT
     int enable = 1;
     if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int)) < 0){

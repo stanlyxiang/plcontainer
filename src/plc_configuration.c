@@ -338,7 +338,7 @@ char *get_sharing_options(plcContainer *cont) {
                 sprintf(volumes[i], "\"%s:%s:ro\"", cont->sharedDirs[i].host,
                         cont->sharedDirs[i].container);
             } else if (cont->sharedDirs[i].mode == PLC_ACCESS_READWRITE) {
-                sprintf(volumes[i], "\"%s:%s:rw\"", cont->sharedDirs[i].host,
+                sprintf(volumes[i], "\"%s:%s:Z\"", cont->sharedDirs[i].host,
                         cont->sharedDirs[i].container);
             } else {
                 elog(ERROR, "Cannot determine directory sharing mode");

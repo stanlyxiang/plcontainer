@@ -17,6 +17,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#include <sys/un.h>
+#include <sys/socket.h>
 
 #include "comm_utils.h"
 #include "comm_connectivity.h"
@@ -347,33 +349,26 @@ plcConn * plcConnInit(int sock) {
  *  data structure
  */
 plcConn *plcConnect(int port) {
-    struct hostent     *server;
-    struct sockaddr_in  raddr; /** Remote address */
+    struct sockaddr_un  raddr; /** Remote address */
     plcConn            *result = NULL;
     struct timeval      tv;
+    int port1 = port;
 
-    int sock = socket(AF_INET, SOCK_STREAM, 0);
+    port1++;
+    int sock = socket(AF_UNIX, SOCK_STREAM, 0);
     if (sock < 0) {
         lprintf(ERROR, "PLContainer: Cannot create socket");
         return result;
     }
 
-    server = gethostbyname("localhost");
-    if (server == NULL) {
-        lprintf(ERROR, "PLContainer: Failed to call gethostbyname('localhost')");
-        return result;
-    }
+    memset(&raddr, 0, sizeof(raddr));
 
-    raddr.sin_family = AF_INET;
-    memcpy(&((raddr).sin_addr.s_addr), (char *)server->h_addr_list[0],
-           server->h_length);
+    raddr.sun_family = AF_UNIX;
+    strcpy(raddr.sun_path, "/home/gpadmin/share/server.socket");
 
-    raddr.sin_port = htons(port);
     if (connect(sock, (const struct sockaddr *)&raddr,
-            sizeof(struct sockaddr_in)) < 0) {
-        char ipAddr[INET_ADDRSTRLEN];
-        inet_ntop(AF_INET, &(raddr.sin_addr), ipAddr, INET_ADDRSTRLEN);
-        lprintf(DEBUG1, "PLContainer: Failed to connect to %s", ipAddr);
+            sizeof(raddr)) < 0) {
+        lprintf(DEBUG1, "PLContainer: Failed to connect");
         return result;
     }
 
