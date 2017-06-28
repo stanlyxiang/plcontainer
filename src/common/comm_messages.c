@@ -46,7 +46,7 @@ static void free_type(plcType *typArr) {
 }
 
 void free_callreq(plcMsgCallreq *req, bool isShared, bool isSender) {
-    int i;
+    int i,j;
 
     if (!isShared) {
         /* free the procedure */
@@ -55,7 +55,7 @@ void free_callreq(plcMsgCallreq *req, bool isShared, bool isSender) {
     }
 
     /* free the arguments */
-    for(int j = 0; j< req->tupleCount; j++){
+    for(j = 0; j< req->tupleCount; j++){
     for (i = 0; i < req->nargs; i++) {
         if (!isShared && req->args[j][i].name != NULL) {
             pfree(req->args[j][i].name);

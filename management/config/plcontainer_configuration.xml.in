@@ -19,7 +19,7 @@
     -->
     <container>
         <name>plc_python</name>
-        <container_id>pivotaldata/plcontainer_python:IMAGE_TAG</container_id>
+        <container_id>10.153.101.113:5000/pivotaldata/plcontainer_python:IMAGE_TAG</container_id>
         <command>./client</command>
         <memory_mb>128</memory_mb>
     </container>

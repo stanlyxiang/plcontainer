@@ -854,7 +854,7 @@ static int receive_ping(plcConn *conn, plcMessage **mPing) {
 
 static int receive_call(plcConn *conn, plcMessage **mCall) {
     int res = 0;
-    int i;
+    int i, j;
     plcMsgCallreq *req;
 
     *mCall         = pmalloc(sizeof(plcMsgCallreq));
@@ -879,7 +879,7 @@ static int receive_call(plcConn *conn, plcMessage **mCall) {
 	debug_print(WARNING, "Function number of arguments is '%d'", req->nargs);
 	if(res == 0){
 		req->args = pmalloc(sizeof(plcArgument*) * req->tupleCount );
-		for(int j =0;j<&req->tupleCount;j++)
+		for(j =0;j<req->tupleCount;j++)
 		{
 			if (res == 0) {
 				req->args[j] = pmalloc(sizeof(plcArgument) * req->nargs);

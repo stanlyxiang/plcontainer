@@ -647,7 +647,7 @@ plcPyFunction *plc_py_init_function(plcMsgCallreq *call) {
     res->pySD = PyDict_New();
 
     for (i = 0; i < res->nargs; i++) {
-        plc_parse_type(&res->args[i], &call->args[i].type, call->args[i].name, false);
+        plc_parse_type(&res->args[i], &call->args[0][i].type, call->args[0][i].name, false);
     }
 
     plc_parse_type(&res->res, &call->retType, "result", false);
