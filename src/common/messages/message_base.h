@@ -11,7 +11,7 @@
 #include "../comm_utils.h"
 
 #define base_message_content unsigned short msgtype;
-
+#define TUPLECOUNT 1000
 typedef struct plcMessage {
     base_message_content
 } plcMessage;

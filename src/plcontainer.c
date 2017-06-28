@@ -165,7 +165,7 @@ static plcProcResult *plcontainer_get_result(FunctionCallInfo  fcinfo,
     int            message_type;
     plcMsgCallreq *req    = NULL;
     plcProcResult *result = NULL;
-
+//for 1K loop
     req = plcontainer_create_call(fcinfo, pinfo);
     name = parse_container_meta(req->proc.src);
     conn = find_container(name);
@@ -184,7 +184,7 @@ static plcProcResult *plcontainer_get_result(FunctionCallInfo  fcinfo,
     if (conn != NULL) {
         plcontainer_channel_send(conn, (plcMessage*)req);
         free_callreq(req, true, true);
-
+        int resCount = 0;
         while (1) {
             int res = 0;
             plcMessage *answer;
@@ -218,9 +218,15 @@ static plcProcResult *plcontainer_get_result(FunctionCallInfo  fcinfo,
             }
 
             if (message_type != MT_SQL && message_type != MT_LOG)
-                break;
+            {
+            		resCount++;
+            		if(resCount == 1000) {
+            			break;
+            		}
+            }
         }
     }
+    //end 1000 loop
     return result;
 }
 

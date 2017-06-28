@@ -258,22 +258,28 @@ static bool plc_procedure_valid(plcProcInfo *proc, HeapTuple procTup) {
 }
 
 static void fill_callreq_arguments(FunctionCallInfo fcinfo, plcProcInfo *pinfo, plcMsgCallreq *req) {
-    int   i;
-
+    int   i, j;
+    req->tupleCount = TUPLECOUNT; //1K
     req->nargs = pinfo->nargs;
     req->retset = pinfo->retset;
-    req->args  = pmalloc(sizeof(*req->args) * pinfo->nargs);
 
-    for (i = 0; i < pinfo->nargs; i++) {
-        req->args[i].name = pinfo->argnames[i];
-        copy_type_info(&req->args[i].type, &pinfo->argtypes[i]);
+    req->args = pmalloc(sizeof(plcArgument*) * req->tupleCount);
+    for( i = 0; i <req->tupleCount ; i++){
+        req->args[i]  = pmalloc(sizeof(plcArgument) * pinfo->nargs);
+    }
 
-        if (fcinfo->argnull[i]) {
-            req->args[i].data.isnull = 1;
-            req->args[i].data.value = NULL;
-        } else {
-            req->args[i].data.isnull = 0;
-            req->args[i].data.value = pinfo->argtypes[i].outfunc(fcinfo->arg[i], &pinfo->argtypes[i]);
-        }
+    for (i = 0; i < req->tupleCount; i++){
+		for (j = 0; j < pinfo->nargs; j++) {
+			req->args[i][j].name = pinfo->argnames[j];
+			copy_type_info(&req->args[i][j].type, &pinfo->argtypes[j]);
+
+			if (fcinfo->argnull[j]) {
+				req->args[i][j].data.isnull = 1;
+				req->args[i][j].data.value = NULL;
+			} else {
+				req->args[i][j].data.isnull = 0;
+				req->args[i][j].data.value = pinfo->argtypes[j].outfunc(fcinfo->arg[j], &pinfo->argtypes[j]);
+			}
+		}
     }
 }

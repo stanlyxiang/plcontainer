@@ -55,25 +55,28 @@ void free_callreq(plcMsgCallreq *req, bool isShared, bool isSender) {
     }
 
     /* free the arguments */
+    for(int j = 0; j< req->tupleCount; j++){
     for (i = 0; i < req->nargs; i++) {
-        if (!isShared && req->args[i].name != NULL) {
-            pfree(req->args[i].name);
+        if (!isShared && req->args[j][i].name != NULL) {
+            pfree(req->args[j][i].name);
         }
-        if (req->args[i].data.value != NULL) {
+        if (req->args[j][i].data.value != NULL) {
             // For UDT we need to free up internal structures
-            if (req->args[i].type.type == PLC_DATA_UDT) {
-                plc_free_udt((plcUDT*)req->args[i].data.value, &req->args[i].type, isSender);
+            if (req->args[j][i].type.type == PLC_DATA_UDT) {
+                plc_free_udt((plcUDT*)req->args[j][i].data.value, &req->args[j][i].type, isSender);
             }
 
             /* For arrays on receiver side we need to free up their data,
              * while on the sender side cleanup is managed by comm_channel */
-            if (!isSender && req->args[i].type.type == PLC_DATA_ARRAY) {
-                plc_free_array((plcArray*)req->args[i].data.value, &req->args[i].type, isSender);
+            if (!isSender && req->args[j][i].type.type == PLC_DATA_ARRAY) {
+                plc_free_array((plcArray*)req->args[j][i].data.value, &req->args[j][i].type, isSender);
             } else {
-                pfree(req->args[i].data.value);
+                pfree(req->args[j][i].data.value);
             }
         }
-        free_type(&req->args[i].type);
+        free_type(&req->args[j][i].type);
+    }
+    pfree(req->args[j]);
     }
     pfree(req->args);
 

@@ -24,7 +24,7 @@
 plcConn* plcconn_global = NULL;
 
 static char *create_python_func(plcMsgCallreq *req);
-static PyObject *arguments_to_pytuple(plcPyFunction *pyfunc);
+static PyObject *arguments_to_pytuple(plcPyFunction *pyfunc, int tupleIndex);
 static int process_call_results(plcConn *conn, PyObject *retval, plcPyFunction *pyfunc);
 static int fill_rawdata(rawdata *res, PyObject *retval, plcPyFunction *pyfunc);
 
@@ -168,28 +168,34 @@ void handle_call(plcMsgCallreq *req, plcConn *conn) {
         return;
     }
 
-    args = arguments_to_pytuple(pyfunc);
-    if (args == NULL) {
-        raise_execution_error("Cannot convert input arguments to Python tuple");
-        return;
+    for(int i = 0; i < req->tupleCount ; i++) {
+		args = arguments_to_pytuple(pyfunc, i);
+		if (args == NULL) {
+			raise_execution_error("Cannot convert input arguments to Python tuple");
+			return;
+		}
+
+		/* call the function */
+		plc_is_execution_terminated = 0;
+		retval = PyObject_Call(pyfunc->pyfunc, args, NULL); // returns new reference
+		if (retval == NULL || PyErr_Occurred()) {
+			Py_XDECREF(args);
+			raise_execution_error("Exception occurred in Python during function execution");
+			return;
+		}
+
+		if (plc_is_execution_terminated == 0) {
+			process_call_results(conn, retval, pyfunc);
+		}
+
+		Py_XDECREF(args);
+	    Py_XDECREF(retval);
     }
 
-    /* call the function */
-    plc_is_execution_terminated = 0;
-    retval = PyObject_Call(pyfunc->pyfunc, args, NULL); // returns new reference
-    if (retval == NULL || PyErr_Occurred()) {
-        Py_XDECREF(args);
-        raise_execution_error("Exception occurred in Python during function execution");
-        return;
-    }
 
-    if (plc_is_execution_terminated == 0) {
-        process_call_results(conn, retval, pyfunc);
-    }
 
     pyfunc->call = NULL;
-    Py_XDECREF(args);
-    Py_XDECREF(retval);
+
 
     return;
 }
@@ -269,7 +275,7 @@ static char *create_python_func(plcMsgCallreq *req) {
     return mrc;
 }
 
-static PyObject *arguments_to_pytuple(plcPyFunction *pyfunc) {
+static PyObject *arguments_to_pytuple(plcPyFunction *pyfunc, int tupleIndex) {
     PyObject *args;
     PyObject *arglist;
     int i;
@@ -278,7 +284,7 @@ static PyObject *arguments_to_pytuple(plcPyFunction *pyfunc) {
 
     /* Amount of elements that have names and should make it to the input tuple */
     for (i = 0; i < pyfunc->nargs; i++) {
-        if (pyfunc->args[i].argName != NULL) {
+        if (pyfunc->args[tupleIndex][i].argName != NULL) {
             notnull += 1;
         }
     }
@@ -294,35 +300,35 @@ static PyObject *arguments_to_pytuple(plcPyFunction *pyfunc) {
         PyObject *arg = NULL;
 
         /* Get the argument from the callreq structure */
-        if (pyfunc->call->args[i].data.isnull) {
+        if (pyfunc->call->args[tupleIndex][i].data.isnull) {
             Py_INCREF(Py_None);
             arg = Py_None;
         } else {
-            if (pyfunc->args[i].conv.inputfunc == NULL) {
+            if (pyfunc->args[tupleIndex][i].conv.inputfunc == NULL) {
                 raise_execution_error("Parameter '%s' (#%d) type %d is not supported",
-                                      pyfunc->args[i].argName,
+                                      pyfunc->args[tupleIndex][i].argName,
                                       i,
-                                      pyfunc->args[i].type);
+                                      pyfunc->args[tupleIndex][i].type);
                 return NULL;
             }
-            arg = pyfunc->args[i].conv.inputfunc(pyfunc->call->args[i].data.value,
-                                                 &pyfunc->args[i]);
+            arg = pyfunc->args[tupleIndex][i].conv.inputfunc(pyfunc->call->args[tupleIndex][i].data.value,
+                                                 &pyfunc->args[tupleIndex][i]);
         }
 
         /* Argument cannot be NULL unless some error has happened as Py_None != NULL */
         if (arg == NULL) {
             raise_execution_error("Converting parameter '%s' (#%d) to Python type failed",
-                                  pyfunc->args[i].argName, i);
+                                  pyfunc->args[tupleIndex][i].argName, i);
             return NULL;
         }
 
         /* Only named arguments are passed to the function input tuple */
-        if (pyfunc->args[i].argName != NULL) {
+        if (pyfunc->args[tupleIndex][i].argName != NULL) {
             /* As the object reference will be stolen by setitem we need to incref */
             Py_INCREF(arg);
             if (PyTuple_SetItem(args, pos, arg) != 0) { // steals the reference to arg
                 raise_execution_error("Appending Python list element %d for argument '%s' has failed",
-                                      i, pyfunc->args[i].argName);
+                                      i, pyfunc->args[tupleIndex][i].argName);
                 return NULL;
             }
             pos += 1;
@@ -331,7 +337,7 @@ static PyObject *arguments_to_pytuple(plcPyFunction *pyfunc) {
         /* All the arguments, including unnamed, are passed to the arguments array */
         if (PyList_SetItem(arglist, i, arg) != 0) { // steals the reference to arg
             raise_execution_error("Appending Python list element %d for argument '%s' has failed",
-                                  i, pyfunc->args[i].argName);
+                                  i, pyfunc->args[tupleIndex][i].argName);
             return NULL;
         }
     }

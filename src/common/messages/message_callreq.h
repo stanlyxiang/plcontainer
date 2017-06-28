@@ -23,7 +23,8 @@ typedef struct plcMsgCallreq {
     plcType      retType;    // function return type
     int          retset;     // whether the function is set-returning
     int          nargs;      // number of function arguments
-    plcArgument *args;       // function arguments
+    plcArgument **args;       // function arguments
+    int tupleCount;
 } plcMsgCallreq;
 
 /*

@@ -614,7 +614,7 @@ static int send_ping(plcConn *conn) {
 
 static int send_call(plcConn *conn, plcMsgCallreq *call) {
     int res = 0;
-    int i;
+    int i, j;
 
     debug_print(WARNING, "Sending call request for function '%s'", call->proc.name);
     res |= message_start(conn, MT_CALLREQ);
@@ -630,12 +630,15 @@ static int send_call(plcConn *conn, plcMsgCallreq *call) {
     res |= send_type(conn, &call->retType);
     debug_print(WARNING, "Function is set-returning: %d", (int)call->retset);
     res |= send_int32(conn, call->retset);
-    debug_print(WARNING, "Function number of arguments is '%d'", call->nargs);
-    res |= send_int32(conn, call->nargs);
+    debug_print(WARNING, "Function is tuplecount: %d", (int)call->tupleCount);
+    res |= send_int32(conn, call->tupleCount);
+	debug_print(WARNING, "Function number of arguments is '%d'", call->nargs);
+	res |= send_int32(conn, call->nargs);
 
-    for (i = 0; i < call->nargs; i++)
-        res |= send_argument(conn, &call->args[i]);
-
+    for(j = 0 ;j < call->tupleCount; j++){
+		for (i = 0; i < call->nargs; i++)
+			res |= send_argument(conn, &call->args[j][i]);
+    }
     res |= message_end(conn);
     debug_print(WARNING, "Finished call request for function '%s'", call->proc.name);
     return res;
@@ -870,13 +873,21 @@ static int receive_call(plcConn *conn, plcMessage **mCall) {
     debug_print(WARNING, "Function return type is '%s'", plc_get_type_name(req->retType.type));
     res |= receive_int32(conn, &req->retset);
     debug_print(WARNING, "Function is set-returning: %d", (int)req->retset);
-    res |= receive_int32(conn, &req->nargs);
-    debug_print(WARNING, "Function number of arguments is '%d'", req->nargs);
-    if (res == 0) {
-        req->args = pmalloc(sizeof(*req->args) * req->nargs);
-        for (i = 0; i < req->nargs && res == 0; i++)
-            res |= receive_argument(conn, &req->args[i]);
-    }
+    res |= receive_int32(conn, &req->tupleCount);
+    debug_print(WARNING, "Function is tuplecount: %d", (int)req->tupleCount);
+	res |= receive_int32(conn, &req->nargs);
+	debug_print(WARNING, "Function number of arguments is '%d'", req->nargs);
+	if(res == 0){
+		req->args = pmalloc(sizeof(plcArgument*) * req->tupleCount );
+		for(int j =0;j<&req->tupleCount;j++)
+		{
+			if (res == 0) {
+				req->args[j] = pmalloc(sizeof(plcArgument) * req->nargs);
+				for (i = 0; i < req->nargs && res == 0; i++)
+					res |= receive_argument(conn, &req->args[j][i]);
+			}
+		}
+	}
     debug_print(WARNING, "Finished call request for function '%s'", req->proc.name);
     return res;
 }
