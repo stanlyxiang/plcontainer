@@ -165,7 +165,8 @@ static plcProcResult *plcontainer_get_result(FunctionCallInfo  fcinfo,
     int            message_type;
     plcMsgCallreq *req    = NULL;
     plcProcResult *result = NULL;
-
+int k;
+for( k=0 ; k<1000;k++) {
     req = plcontainer_create_call(fcinfo, pinfo);
     name = parse_container_meta(req->proc.src);
     conn = find_container(name);
@@ -221,6 +222,7 @@ static plcProcResult *plcontainer_get_result(FunctionCallInfo  fcinfo,
                 break;
         }
     }
+}
     return result;
 }
 
