@@ -34,7 +34,7 @@ interpreted as representing official policies, either expressed or implied, of t
 #include "postgres.h"
 #include "executor/spi.h"
 #include "access/transam.h"
-#include "guc.h"
+#include "utils/guc.h"
 
 /* message and function definitions */
 #include "common/comm_utils.h"
