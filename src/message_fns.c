@@ -34,6 +34,7 @@ interpreted as representing official policies, either expressed or implied, of t
 #include "postgres.h"
 #include "executor/spi.h"
 #include "access/transam.h"
+#include "guc.h"
 
 /* message and function definitions */
 #include "common/comm_utils.h"
@@ -259,7 +260,7 @@ static bool plc_procedure_valid(plcProcInfo *proc, HeapTuple procTup) {
 
 static void fill_callreq_arguments(FunctionCallInfo fcinfo, plcProcInfo *pinfo, plcMsgCallreq *req) {
     int   i, j;
-    req->tupleCount = TUPLECOUNT; //1K
+    req->tupleCount = tuple_count; //1K
     req->nargs = pinfo->nargs;
     req->retset = pinfo->retset;
 
