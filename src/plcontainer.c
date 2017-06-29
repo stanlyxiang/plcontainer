@@ -33,7 +33,8 @@ PG_FUNCTION_INFO_V1(plcontainer_call_handler);
 
 static Datum plcontainer_call_hook(PG_FUNCTION_ARGS);
 static plcProcResult *plcontainer_get_result(FunctionCallInfo  fcinfo,
-                                             plcProcInfo      *pinfo);
+                                             plcProcInfo      *pinfo,
+											 Datum *datumResult);
 static Datum plcontainer_process_result(FunctionCallInfo  fcinfo,
                                         plcProcInfo      *pinfo,
                                         plcProcResult    *presult);
@@ -126,7 +127,7 @@ static Datum plcontainer_call_hook(PG_FUNCTION_ARGS) {
 
     /* First time call for SRF or just a call of scalar function */
     if (bFirstTimeCall) {
-        presult = plcontainer_get_result(fcinfo, pinfo);
+        presult = plcontainer_get_result(fcinfo, pinfo,&result);
         if (fcinfo->flinfo->fn_retset) {
             funcctx->user_fctx = (void*)presult;
         }
@@ -143,7 +144,7 @@ static Datum plcontainer_call_hook(PG_FUNCTION_ARGS) {
     }
 
     /* Process the result message from client */
-    result = plcontainer_process_result(fcinfo, pinfo, presult);
+    //result = plcontainer_process_result(fcinfo, pinfo, presult);
 
     presult->resrow += 1;
     MemoryContextSwitchTo(oldcontext);
@@ -159,7 +160,8 @@ static Datum plcontainer_call_hook(PG_FUNCTION_ARGS) {
 }
 
 static plcProcResult *plcontainer_get_result(FunctionCallInfo  fcinfo,
-                                             plcProcInfo      *pinfo) {
+                                             plcProcInfo      *pinfo,
+											 Datum *datumResult) {
     char          *name;
     plcConn       *conn;
     int            message_type;
@@ -219,6 +221,8 @@ static plcProcResult *plcontainer_get_result(FunctionCallInfo  fcinfo,
 
             if (message_type != MT_SQL && message_type != MT_LOG)
             {
+                /* Process the result message from client */
+                *datumResult = plcontainer_process_result(fcinfo, pinfo, result);
             		resCount++;
             		if(resCount == 1000) {
             			break;
