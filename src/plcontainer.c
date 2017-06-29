@@ -221,7 +221,7 @@ for( k=0 ; k<1000;k++) {
             }
 
             if (message_type != MT_SQL && message_type != MT_LOG){
-            		datumResult = plcontainer_process_result(fcinfo, pinfo, result);
+            		*datumResult = plcontainer_process_result(fcinfo, pinfo, result);
             		break;
             }
         }
