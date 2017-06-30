@@ -15,6 +15,8 @@
 #include "executor/spi.h"
 #include "commands/trigger.h"
 
+#include <time.h>
+
 /* PLContainer Headers */
 #include "common/comm_channel.h"
 #include "common/messages/messages.h"
@@ -89,6 +91,8 @@ Datum plcontainer_call_handler(PG_FUNCTION_ARGS) {
              SPI_result_code_string(ret));
 
     pl_container_caller_context = oldMC;
+    elog(LOG, "plcontainerstat %l : %l : %l : %l"
+               , plcontainer_create_call_time, send_time,free_time, receive_time);
     return datumreturn;
 }
 
@@ -159,6 +163,20 @@ static Datum plcontainer_call_hook(PG_FUNCTION_ARGS) {
     return result;
 }
 
+uint64 gettime_microsec(void)
+{
+	struct timeval newTime;
+	int status = 1;
+	uint64 t = 0;
+
+	if (status != 0)
+	{
+		gettimeofday(&newTime, NULL);
+	}
+	t = ((uint64)newTime.tv_sec) * 1000000 + newTime.tv_usec;
+	return t;
+}
+
 static plcProcResult *plcontainer_get_result(FunctionCallInfo  fcinfo,
                                              plcProcInfo      *pinfo,
 											 Datum *datumResult) {
@@ -168,7 +186,11 @@ static plcProcResult *plcontainer_get_result(FunctionCallInfo  fcinfo,
     plcMsgCallreq *req    = NULL;
     plcProcResult *result = NULL;
 //for 1K loop
+    int t1,t2;
+    t1= gettime_microsec();
     req = plcontainer_create_call(fcinfo, pinfo);
+    t2=gettime_microsec();
+    plcontainer_create_call_time += t2-t1;
     name = parse_container_meta(req->proc.src);
     conn = find_container(name);
     if (conn == NULL) {
@@ -184,8 +206,14 @@ static plcProcResult *plcontainer_get_result(FunctionCallInfo  fcinfo,
     pfree(name);
 
     if (conn != NULL) {
+    		t1= gettime_microsec();
         plcontainer_channel_send(conn, (plcMessage*)req);
+        t2 = gettime_microsec();
+        send_time += t2-t1;
         free_callreq(req, true, true);
+
+        free_time += gettime_microsec() - t2;
+        t1= gettime_microsec();
         int resCount = 0;
         while (1) {
             int res = 0;
@@ -229,6 +257,7 @@ static plcProcResult *plcontainer_get_result(FunctionCallInfo  fcinfo,
             		}
             }
         }
+        receive_time += gettime_microsec() - t1;
     }
     //end 1000 loop
     return result;
