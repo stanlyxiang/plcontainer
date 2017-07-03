@@ -87,7 +87,7 @@ installcheck4:
 .PHONY: clients
 clients:
 	$(MAKE) -C $(SRCDIR)/pyclient
-	$(MAKE) -C $(SRCDIR)/rclient
+	#$(MAKE) -C $(SRCDIR)/rclient
 
 .PHONY: xmlconfig
 xmlconfig:

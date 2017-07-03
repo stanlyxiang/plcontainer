@@ -44,6 +44,20 @@ static void plcontainer_process_exception(plcMsgError *msg);
 static void plcontainer_process_sql(plcMsgSQL *msg, plcConn* conn);
 static void plcontainer_process_log(plcMsgLog *log);
 
+uint64 gettime_microsec(void)
+{
+        struct timeval newTime;
+        int status = 1;
+        uint64 t = 0;
+
+        if (status != 0)
+        {
+                gettimeofday(&newTime, NULL);
+        }
+        t = ((uint64)newTime.tv_sec) * 1000000 + newTime.tv_usec;
+        return t;
+}
+
 Datum plcontainer_call_handler(PG_FUNCTION_ARGS) {
 	uint64 t1,t2;
 	    t1= gettime_microsec();
@@ -167,19 +181,6 @@ static Datum plcontainer_call_hook(PG_FUNCTION_ARGS) {
     return result;
 }
 
-uint64 gettime_microsec(void)
-{
-	struct timeval newTime;
-	int status = 1;
-	uint64 t = 0;
-
-	if (status != 0)
-	{
-		gettimeofday(&newTime, NULL);
-	}
-	t = ((uint64)newTime.tv_sec) * 1000000 + newTime.tv_usec;
-	return t;
-}
 
 static plcProcResult *plcontainer_get_result(FunctionCallInfo  fcinfo,
                                              plcProcInfo      *pinfo,

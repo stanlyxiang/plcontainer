@@ -8,6 +8,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <sys/time.h>
 
 #include "common/comm_channel.h"
 #include "common/comm_utils.h"
