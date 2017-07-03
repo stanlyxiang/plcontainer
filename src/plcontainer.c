@@ -91,7 +91,7 @@ Datum plcontainer_call_handler(PG_FUNCTION_ARGS) {
              SPI_result_code_string(ret));
 
     pl_container_caller_context = oldMC;
-    elog(LOG, "plcontainerstat %l : %l : %l : %l"
+    elog(LOG, "plcontainerstat %llu : %llu : %llu : %llu"
                , plcontainer_create_call_time, send_time,free_time, receive_time);
     return datumreturn;
 }
