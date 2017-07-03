@@ -109,8 +109,8 @@ Datum plcontainer_call_handler(PG_FUNCTION_ARGS) {
     pl_container_caller_context = oldMC;
     t2= gettime_microsec();
     uint64 totalhandlertime= t2-t1;
-    elog(LOG, "plcontainerstat %llu : %llu : %llu : %llu : %llu"
-               , plcontainer_create_call_time, send_time,free_time, receive_time, totalhandlertime);
+    elog(LOG, "plcontainerstat %llu : %llu : %llu : %llu : %llu : %llu : %llu"
+               , plcontainer_create_call_time, send_time,free_time, mm1,mm2,receive_time, totalhandlertime);
     return datumreturn;
 }
 
@@ -223,8 +223,10 @@ static plcProcResult *plcontainer_get_result(FunctionCallInfo  fcinfo,
         while (1) {
             int res = 0;
             plcMessage *answer;
-
+            t2 = gettime_microsec();
             res = plcontainer_channel_receive(conn, &answer);
+            mm1 = gettime_microsec()-t2;
+            t2 = gettime_microsec();
             if (res < 0) {
                 elog(ERROR, "Error receiving data from the client, %d", res);
                 break;
@@ -261,6 +263,8 @@ static plcProcResult *plcontainer_get_result(FunctionCallInfo  fcinfo,
             			break;
             		}
             }
+            mm2 = gettime_microsec()-t2;
+            t2 = gettime_microsec();
         }
         receive_time += gettime_microsec() - t1;
     }
