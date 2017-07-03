@@ -106,12 +106,32 @@ int python_init() {
     return 0;
 }
 
+unsigned long long gettime_microsec3(void)
+{
+	struct timeval newTime;
+	int status = 1;
+	unsigned long long t = 0;
+
+	if (status != 0)
+	{
+		gettimeofday(&newTime, NULL);
+	}
+	t = ((unsigned long long)newTime.tv_sec) * 1000000 + newTime.tv_usec;
+	return t;
+}
+
+
 void handle_call(plcMsgCallreq *req, plcConn *conn) {
     PyObject      *retval = NULL;
     PyObject      *dict = NULL;
     PyObject      *args = NULL;
     plcPyFunction *pyfunc = NULL;
 
+
+    unsigned long long t1;
+    unsigned long long t2;
+    unsigned long long m1 = 0,m2=0,m3=0,m4=0,m5=0,m6=0,m7=0,m8=0,m9=0;
+  //  unsigned long long m2= 0;
     /*
      * Keep our connection for future calls from Python back to us.
      */
@@ -119,26 +139,30 @@ void handle_call(plcMsgCallreq *req, plcConn *conn) {
     plc_sending_data = 0;
     plc_is_execution_terminated = 0;
 
+    t1 =gettime_microsec3();
     dict = PyModule_GetDict(PyMainModule); // Returns borrowed reference
     if (dict == NULL) {
         raise_execution_error("Cannot get '__main__' module contents in Python");
         return;
     }
-
     pyfunc = plc_py_function_cache_get(req->objectid);
-
+    m1 += gettime_microsec3() -t1;
+    t1 =gettime_microsec3();
     if (pyfunc == NULL || req->hasChanged) {
         char     *func;
         PyObject *val;
 
         /* Parse request to get funcion structure */
         pyfunc = plc_py_init_function(req);
-
+        m2 += gettime_microsec3() -t1;
+        t1 =gettime_microsec3();
         /* Modify function code for compiling it into Python object */
         func = create_python_func(req);
         if (func == NULL) {
             return;
         }
+        m3 += gettime_microsec3() -t1;
+        t1 =gettime_microsec3();
 
         /* The function will be in the dictionary because it was wrapped with "def proc_name:... " */
         val = PyRun_String(func, Py_single_input, dict, dict); // Returns new reference
@@ -148,6 +172,8 @@ void handle_call(plcMsgCallreq *req, plcConn *conn) {
         }
         Py_DECREF(val);
         free(func);
+        m4 += gettime_microsec3() -t1;
+        t1 =gettime_microsec3();
 
         /* get the function from the global dictionary, returns borrowed reference */
         val = PyDict_GetItemString(dict, req->proc.name);
@@ -168,12 +194,17 @@ void handle_call(plcMsgCallreq *req, plcConn *conn) {
         return;
     }
     int i;
+    m5 += gettime_microsec3() -t1;
+    t1 =gettime_microsec3();
     for(i = 0; i < req->tupleCount ; i++) {
+    		t2 =gettime_microsec3();
 		args = arguments_to_pytuple(pyfunc, i);
 		if (args == NULL) {
 			raise_execution_error("Cannot convert input arguments to Python tuple");
 			return;
 		}
+		m6 += gettime_microsec3() -t2;
+		t2 =gettime_microsec3();
 
 		/* call the function */
 		plc_is_execution_terminated = 0;
@@ -183,17 +214,22 @@ void handle_call(plcMsgCallreq *req, plcConn *conn) {
 			raise_execution_error("Exception occurred in Python during function execution");
 			return;
 		}
-
+		m7 += gettime_microsec3() -t2;
+		t2 =gettime_microsec3();
 		if (plc_is_execution_terminated == 0) {
 			process_call_results(conn, retval, pyfunc);
 		}
-
+		m8 += gettime_microsec3() -t2;
+		t2 =gettime_microsec3();
 		Py_XDECREF(args);
 	    Py_XDECREF(retval);
     }
+    m9 += gettime_microsec3() -t1;
 
 
 
+    lprintf(LOG, "plcontainerstat %llu : %llu : %llu : %llu : %llu : %llu : %llu : %llu: %llu"
+               , m1, m2,m3,m4,m5,m6,m7,m8,m9);
     pyfunc->call = NULL;
 
 

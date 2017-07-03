@@ -45,6 +45,8 @@ static void plcontainer_process_sql(plcMsgSQL *msg, plcConn* conn);
 static void plcontainer_process_log(plcMsgLog *log);
 
 Datum plcontainer_call_handler(PG_FUNCTION_ARGS) {
+	uint64 t1,t2;
+	    t1= gettime_microsec();
     Datum datumreturn = (Datum) 0;
     MemoryContext oldMC = NULL;
     int ret;
@@ -91,8 +93,10 @@ Datum plcontainer_call_handler(PG_FUNCTION_ARGS) {
              SPI_result_code_string(ret));
 
     pl_container_caller_context = oldMC;
-    elog(LOG, "plcontainerstat %llu : %llu : %llu : %llu"
-               , plcontainer_create_call_time, send_time,free_time, receive_time);
+    t2= gettime_microsec();
+    uint64 totalhandlertime= t2-t1;
+    elog(LOG, "plcontainerstat %llu : %llu : %llu : %llu : %llu"
+               , plcontainer_create_call_time, send_time,free_time, receive_time, totalhandlertime);
     return datumreturn;
 }
 

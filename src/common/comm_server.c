@@ -10,6 +10,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
+#include <time.h>
 
 #include "comm_channel.h"
 #include "comm_utils.h"
@@ -90,6 +91,20 @@ plcConn* connection_init(int sock) {
     return plcConnInit(connection);
 }
 
+unsigned long long gettime_microsec2(void)
+{
+	struct timeval newTime;
+	int status = 1;
+	unsigned long long t = 0;
+
+	if (status != 0)
+	{
+		gettimeofday(&newTime, NULL);
+	}
+	t = ((unsigned long long)newTime.tv_sec) * 1000000 + newTime.tv_usec;
+	return t;
+}
+
 /*
  * The loop of receiving commands from the Greenplum process and processing them
  */
@@ -114,9 +129,16 @@ void receive_loop( void (*handle_call)(plcMsgCallreq*, plcConn*), plcConn* conn)
     }
     pfree(msg);
 
+    unsigned long long t1;
+    unsigned long long t2;
+    unsigned long long receive_time = 0;
+    unsigned long long handle_call_time = 0;
     while (1) {
+    		t1 =gettime_microsec2();
         res = plcontainer_channel_receive(conn, &msg);
-        
+        t2 = gettime_microsec2();
+
+        	receive_time += t2 - t1;
         if (res == -3) {
             lprintf(NOTICE, "Backend must have closed the connection");
             break;
@@ -134,5 +156,8 @@ void receive_loop( void (*handle_call)(plcMsgCallreq*, plcConn*), plcConn* conn)
             default:
                 lprintf(ERROR, "received unknown message: %c", msg->msgtype);
         }
+
+        lprintf(LOG, "plcontainerstat %llu : %llu"
+                   , receive_time, handle_call_time);
     }
 }
