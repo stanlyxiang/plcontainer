@@ -186,7 +186,7 @@ static plcProcResult *plcontainer_get_result(FunctionCallInfo  fcinfo,
     plcMsgCallreq *req    = NULL;
     plcProcResult *result = NULL;
 //for 1K loop
-    int t1,t2;
+    uint64 t1,t2;
     t1= gettime_microsec();
     req = plcontainer_create_call(fcinfo, pinfo);
     t2=gettime_microsec();
