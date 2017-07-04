@@ -111,7 +111,7 @@ unsigned long long gettime_microsec2(void)
 /*
  * The loop of receiving commands from the Greenplum process and processing them
  */
-void receive_loop( void (*handle_call)(plcMsgCallreq*, plcConn*), plcConn* conn) {
+void receive_loop( void (*handle_call)(plcMsgCallreq*, plcConn*, int), plcConn* conn) {
     plcMessage *msg;
     int res = 0;
 
