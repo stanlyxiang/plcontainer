@@ -225,7 +225,7 @@ static plcProcResult *plcontainer_get_result(FunctionCallInfo  fcinfo,
             plcMessage *answer;
             t2 = gettime_microsec();
             res = plcontainer_channel_receive(conn, &answer);
-            mm1 = gettime_microsec()-t2;
+            mm1 += gettime_microsec()-t2;
             t2 = gettime_microsec();
             if (res < 0) {
                 elog(ERROR, "Error receiving data from the client, %d", res);
@@ -263,7 +263,7 @@ static plcProcResult *plcontainer_get_result(FunctionCallInfo  fcinfo,
             			break;
             		}
             }
-            mm2 = gettime_microsec()-t2;
+            mm2 += gettime_microsec()-t2;
             t2 = gettime_microsec();
         }
         receive_time += gettime_microsec() - t1;
