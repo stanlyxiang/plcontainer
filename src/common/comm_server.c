@@ -136,7 +136,7 @@ void receive_loop( void (*handle_call)(plcMsgCallreq*, plcConn*, int), plcConn* 
     unsigned long long t2;
     unsigned long long receive_time = 0;
     unsigned long long handle_call_time = 0;
-    int times = 0;
+    unsigned long long times = 0;
     while (1) {
     	times++;
     		t1 =gettime_microsec2();
