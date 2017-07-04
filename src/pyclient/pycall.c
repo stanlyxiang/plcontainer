@@ -26,7 +26,8 @@ plcConn* plcconn_global = NULL;
 
 static char *create_python_func(plcMsgCallreq *req);
 static PyObject *arguments_to_pytuple(plcPyFunction *pyfunc, int tupleIndex);
-static int process_call_results(plcConn *conn, PyObject *retval, plcPyFunction *pyfunc);
+static int process_call_results(plcConn *conn, PyObject *retval, plcPyFunction *pyfunc,
+								unsigned long long *m10, unsigned long long *m11, unsigned long long *m12, unsigned long long *m13);
 static int fill_rawdata(rawdata *res, PyObject *retval, plcPyFunction *pyfunc);
 
 static PyObject *PyMainModule = NULL;
@@ -132,6 +133,7 @@ void handle_call(plcMsgCallreq *req, plcConn *conn, int times) {
     unsigned long long t1;
     unsigned long long t2;
     unsigned long long m1 = 0,m2=0,m3=0,m4=0,m5=0,m6=0,m7=0,m8=0,m9=0;
+    unsigned long long m10, m11, m12, m13
   //  unsigned long long m2= 0;
     /*
      * Keep our connection for future calls from Python back to us.
@@ -218,7 +220,7 @@ void handle_call(plcMsgCallreq *req, plcConn *conn, int times) {
 		m7 += gettime_microsec3() -t2;
 		t2 =gettime_microsec3();
 		if (plc_is_execution_terminated == 0) {
-			process_call_results(conn, retval, pyfunc);
+			process_call_results(conn, retval, pyfunc, &m10,&m11,&m12,&m13);
 		}
 		m8 += gettime_microsec3() -t2;
 		t2 =gettime_microsec3();
@@ -229,8 +231,8 @@ void handle_call(plcMsgCallreq *req, plcConn *conn, int times) {
 
 
     if(times  % 1000 == 0){
-    lprintf(LOG, "plcontainerstat %llu : %llu : %llu : %llu : %llu : %llu : %llu : %llu: %llu"
-              , m1, m2,m3,m4,m5,m6,m7,m8,m9);
+    lprintf(LOG, "plcontainerstat %llu : %llu : %llu : %llu : %llu : %llu : %llu : %llu: %llu.  plcontainerstate more detail: %llu : %llu : %llu: %llu. "
+              , m1, m2,m3,m4,m5,m6,m7,m8,m9, m10,m11,m12,m13);
     }
     pyfunc->call = NULL;
 
@@ -382,10 +384,11 @@ static PyObject *arguments_to_pytuple(plcPyFunction *pyfunc, int tupleIndex) {
     return args;
 }
 
-static int process_call_results(plcConn *conn, PyObject *retval, plcPyFunction *pyfunc) {
+static int process_call_results(plcConn *conn, PyObject *retval, plcPyFunction *pyfunc, unsigned long long *m10,
+		unsigned long long *m11, unsigned long long *m12, unsigned long long *m13) {
     plcMsgResult *res;
     int           retcode = 0;
-
+    unsigned long long t = gettime_microsec3();
     /* allocate a result */
     res           = malloc(sizeof(plcMsgResult));
     res->msgtype  = MT_RESULT;
@@ -396,6 +399,8 @@ static int process_call_results(plcConn *conn, PyObject *retval, plcPyFunction *
     res->exception_callback = plc_error_callback;
     plc_py_copy_type(&res->types[0], &pyfunc->res);
 
+    *m10 += gettime_microsec3() - t;
+    	t = gettime_microsec3();
     /* Now we support only functions returning single column */
     res->cols = 1;
 
@@ -451,6 +456,9 @@ static int process_call_results(plcConn *conn, PyObject *retval, plcPyFunction *
         retcode = fill_rawdata(&res->data[0][0], retval, pyfunc);
     }
 
+    *m11 += gettime_microsec3() - t;
+	t = gettime_microsec3();
+
     /* If the output operation succeeded we send the result back */
     if (retcode == 0) {
         /* We manually state that we are sending the data to avoid message interleaving */
@@ -459,10 +467,15 @@ static int process_call_results(plcConn *conn, PyObject *retval, plcPyFunction *
         plc_sending_data = 0;
     }
 
+    *m12 += gettime_microsec3() - t;
+	t = gettime_microsec3();
+
     free_result(res, true);
 
     /* After the message is sent we can safely send exceptions */
     plc_raise_delayed_error();
+
+    *m13 += gettime_microsec3() - t;
 
     return retcode;
 }

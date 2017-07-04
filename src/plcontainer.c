@@ -110,7 +110,7 @@ Datum plcontainer_call_handler(PG_FUNCTION_ARGS) {
     t2= gettime_microsec();
     total_handler_time += t2-t1;
     pl_tuple_count++;
-    if(pl_tuple_count % 1000 == 0){
+    if(pl_tuple_count % 500 == 0){
     		elog(LOG, "plcontainerstat %llu : %llu : %llu : %llu : %llu : %llu : %llu"
                , plcontainer_create_call_time, send_time,free_time, mm1,mm2,receive_time, total_handler_time);
     }
