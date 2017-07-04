@@ -108,9 +108,12 @@ Datum plcontainer_call_handler(PG_FUNCTION_ARGS) {
 
     pl_container_caller_context = oldMC;
     t2= gettime_microsec();
-    uint64 totalhandlertime= t2-t1;
-    elog(LOG, "plcontainerstat %llu : %llu : %llu : %llu : %llu : %llu : %llu"
-               , plcontainer_create_call_time, send_time,free_time, mm1,mm2,receive_time, totalhandlertime);
+    total_handler_time += t2-t1;
+    pl_tuple_count++;
+    if(pl_tuple_count % 1000 == 0){
+    		elog(LOG, "plcontainerstat %llu : %llu : %llu : %llu : %llu : %llu : %llu"
+               , plcontainer_create_call_time, send_time,free_time, mm1,mm2,receive_time, total_handler_time);
+    }
     return datumreturn;
 }
 

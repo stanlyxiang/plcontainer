@@ -46,6 +46,6 @@ int plc_sending_data;
 int python_init(void);
 
 // Processing of the Greenplum function call
-void handle_call(plcMsgCallreq *req, plcConn* conn);
+void handle_call(plcMsgCallreq *req, plcConn* conn, int times);
 
 #endif /* PLC_PYCALL_H */

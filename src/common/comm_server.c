@@ -136,7 +136,9 @@ void receive_loop( void (*handle_call)(plcMsgCallreq*, plcConn*), plcConn* conn)
     unsigned long long t2;
     unsigned long long receive_time = 0;
     unsigned long long handle_call_time = 0;
+    int times = 0;
     while (1) {
+    	times++;
     		t1 =gettime_microsec2();
         res = plcontainer_channel_receive(conn, &msg);
         t2 = gettime_microsec2();
@@ -153,14 +155,16 @@ void receive_loop( void (*handle_call)(plcMsgCallreq*, plcConn*), plcConn* conn)
 
         switch (msg->msgtype) {
             case MT_CALLREQ:
-                handle_call((plcMsgCallreq*)msg, conn);
+                handle_call((plcMsgCallreq*)msg, conn, times);
                 free_callreq((plcMsgCallreq*)msg, false, false);
                 break;
             default:
                 lprintf(ERROR, "received unknown message: %c", msg->msgtype);
         }
-
+        handle_call_time += gettime_microsec2() - t2;
+        if(times % 1000 ==0){
         lprintf(LOG, "plcontainerstat %llu : %llu"
                    , receive_time, handle_call_time);
+        }
     }
 }
