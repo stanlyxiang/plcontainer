@@ -262,7 +262,7 @@ static plcProcResult *plcontainer_get_result(FunctionCallInfo  fcinfo,
                 /* Process the result message from client */
                 *datumResult = plcontainer_process_result(fcinfo, pinfo, result);
             		resCount++;
-            		if(resCount == 1000) {
+            		if(resCount == 1) {
             			break;
             		}
             }

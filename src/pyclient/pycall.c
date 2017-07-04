@@ -133,7 +133,7 @@ void handle_call(plcMsgCallreq *req, plcConn *conn, int times) {
     unsigned long long t1;
     unsigned long long t2;
     unsigned long long m1 = 0,m2=0,m3=0,m4=0,m5=0,m6=0,m7=0,m8=0,m9=0;
-    unsigned long long m10, m11, m12, m13
+    unsigned long long m10=0, m11=0, m12=0, m13=0;
   //  unsigned long long m2= 0;
     /*
      * Keep our connection for future calls from Python back to us.

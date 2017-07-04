@@ -259,7 +259,7 @@ static bool plc_procedure_valid(plcProcInfo *proc, HeapTuple procTup) {
 
 static void fill_callreq_arguments(FunctionCallInfo fcinfo, plcProcInfo *pinfo, plcMsgCallreq *req) {
     int   i, j;
-    req->tupleCount = 1000; //1K
+    req->tupleCount = 1; //1K
     req->nargs = pinfo->nargs;
     req->retset = pinfo->retset;
 
