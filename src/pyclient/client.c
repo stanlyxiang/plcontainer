@@ -37,7 +37,7 @@ int main(int argc UNUSED, char **argv UNUSED) {
 
     // Initialize Python
     status = python_init();
-
+    lprintf(LOG, "plcontainerstatstart" );
     #ifdef _DEBUG_CLIENT
         // In debug mode we have a cycle of connections with infinite wait time
         while (true) {
