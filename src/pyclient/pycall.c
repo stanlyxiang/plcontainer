@@ -123,7 +123,7 @@ int python_init() {
     return 0;
 }
 
-void handle_call(plcMsgCallreq *req, plcConn *conn, int times) {
+void handle_call(plcMsgCallreq *req, plcConn *conn) {
     PyObject      *retval = NULL;
     PyObject      *dict = NULL;
     PyObject      *args = NULL;
@@ -214,7 +214,6 @@ void handle_call(plcMsgCallreq *req, plcConn *conn, int times) {
 		Py_XDECREF(args);
 	    Py_XDECREF(retval);
     }
-    m9 += gettime_nanosec() -t1;
 
     pyfunc->call = NULL;
 

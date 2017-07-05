@@ -30,7 +30,7 @@ static plcMsgResult *receive_from_backend() {
 
     switch (resp->msgtype) {
         case MT_CALLREQ:
-            handle_call((plcMsgCallreq*)resp, conn, 1);
+            handle_call((plcMsgCallreq*)resp, conn);
             free_callreq((plcMsgCallreq*)resp, false, false);
             return receive_from_backend();
         case MT_RESULT:

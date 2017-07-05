@@ -114,7 +114,7 @@ plcConn* connection_init(int sock) {
 /*
  * The loop of receiving commands from the Greenplum process and processing them
  */
-void receive_loop( void (*handle_call)(plcMsgCallreq*, plcConn*, int), plcConn* conn) {
+void receive_loop( void (*handle_call)(plcMsgCallreq*, plcConn*), plcConn* conn) {
     plcMessage *msg;
     int res = 0;
 
@@ -154,7 +154,7 @@ void receive_loop( void (*handle_call)(plcMsgCallreq*, plcConn*, int), plcConn* 
 
         switch (msg->msgtype) {
             case MT_CALLREQ:
-                handle_call((plcMsgCallreq*)msg, conn, times);
+                handle_call((plcMsgCallreq*)msg, conn);
                 free_callreq((plcMsgCallreq*)msg, false, false);
                 break;
             default:
