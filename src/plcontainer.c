@@ -58,9 +58,23 @@ uint64 gettime_microsec(void)
         return t;
 }
 
+
+uint64 gettime_nanosec(void)
+{
+
+        uint64 t = 0;
+
+        struct timespec ts;
+        clock_gettime(CLOCK_MONOTONIC, &ts);
+
+
+        t = ((uint64)ts.tv_sec) * 1000000000 + ts.tv_nsec;
+        return t;
+}
+
 Datum plcontainer_call_handler(PG_FUNCTION_ARGS) {
 	uint64 t1,t2;
-	    t1= gettime_microsec();
+	t1= gettime_microsec();
     Datum datumreturn = (Datum) 0;
     MemoryContext oldMC = NULL;
     int ret;
@@ -215,6 +229,7 @@ static plcProcResult *plcontainer_get_result(FunctionCallInfo  fcinfo,
 
     if (conn != NULL) {
     		t1= gettime_microsec();
+    		req->ts = gettime_nanosec();
         plcontainer_channel_send(conn, (plcMessage*)req);
         t2 = gettime_microsec();
         send_time += t2-t1;

@@ -35,6 +35,8 @@ interpreted as representing official policies, either expressed or implied, of t
 #include <unistd.h>
 #include <string.h>
 
+extern unsigned long long delay_time;
+extern unsigned long long gettime_nanosec(void);
 static int message_start(plcConn *conn, char msgType);
 static int message_end(plcConn *conn);
 
@@ -43,6 +45,7 @@ static int send_int16(plcConn *conn, short i);
 static int send_int32(plcConn *conn, int i);
 static int send_uint32(plcConn *conn, unsigned int i);
 static int send_int64(plcConn *conn, long long i);
+static int send_uint64(plcConn *conn, unsigned long long i);
 static int send_float4(plcConn *conn, float f);
 static int send_float8(plcConn *conn, double f);
 static int send_cstring(plcConn *conn, char *s);
@@ -58,6 +61,7 @@ static int receive_int16(plcConn *conn, short *i);
 static int receive_int32(plcConn *conn, int *i);
 static int receive_uint32(plcConn *conn, unsigned int *i);
 static int receive_int64(plcConn *conn, long long *i);
+static int receive_uint64(plcConn *conn, unsigned long long *i);
 static int receive_float4(plcConn *conn, float *f);
 static int receive_float8(plcConn *conn, double *f);
 static int receive_raw(plcConn *conn, char *s, size_t len);
@@ -185,6 +189,10 @@ static int send_uint32(plcConn *conn, unsigned int i) {
 
 static int send_int64(plcConn *conn, long long i) {
     debug_print(WARNING, "    ===> sending int64 '%lld'", i);
+    return plcBufferAppend(conn, (char*)&i, 8);
+}
+static int send_uint64(plcConn *conn, unsigned long long i) {
+    debug_print(WARNING, "    ===> sending uint64 '%llu'", i);
     return plcBufferAppend(conn, (char*)&i, 8);
 }
 
@@ -365,6 +373,12 @@ static int receive_uint32(plcConn *conn, unsigned int *i) {
 static int receive_int64(plcConn *conn, long long *i) {
     int res = plcBufferRead(conn, (char*)i, 8);
     debug_print(WARNING, "    <=== receiving int64 '%lld'", *i);
+    return res;
+}
+
+static int receive_uint64(plcConn *conn, unsigned long long *i) {
+    int res = plcBufferRead(conn, (char*)i, 8);
+    debug_print(WARNING, "    <=== receiving uint64 '%llu'", *i);
     return res;
 }
 
@@ -618,6 +632,7 @@ static int send_call(plcConn *conn, plcMsgCallreq *call) {
 
     debug_print(WARNING, "Sending call request for function '%s'", call->proc.name);
     res |= message_start(conn, MT_CALLREQ);
+    res |= send_uint64(conn, call->ts);
     res |= send_cstring(conn, call->proc.name);
     debug_print(WARNING, "Function source code:");
     debug_print(WARNING, "%s", call->proc.src);
@@ -860,6 +875,8 @@ static int receive_call(plcConn *conn, plcMessage **mCall) {
     *mCall         = pmalloc(sizeof(plcMsgCallreq));
     req            = (plcMsgCallreq*) *mCall;
     req->msgtype   = MT_CALLREQ;
+    res |= receive_uint64(conn, &req->ts);
+    delay_time += gettime_nanosec() - req->ts;
     res |= receive_cstring(conn, &req->proc.name);
     debug_print(WARNING, "Receiving call request for function '%s'", req->proc.name);
     res |= receive_cstring(conn, &req->proc.src);

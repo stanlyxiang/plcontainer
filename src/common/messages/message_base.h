@@ -54,4 +54,5 @@ typedef struct {
 int plc_get_type_length(plcDatatype dt);
 const char* plc_get_type_name(plcDatatype dt);
 
+
 #endif /* PLC_MESSAGE_BASE_H */

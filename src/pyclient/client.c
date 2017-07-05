@@ -20,6 +20,27 @@
 #include "pycall.h"
 #include "pyerror.h"
 
+extern unsigned long long delay_time = 0;
+extern unsigned long long handle_call_time =0;
+extern unsigned long long serialize_time = 0;
+extern unsigned long long receive_time=0;
+
+extern unsigned long long gettime_nanosec(void);
+
+
+unsigned long long gettime_nanosec(void)
+{
+
+	unsigned long long t = 0;
+
+        struct timespec ts;
+        clock_gettime(CLOCK_MONOTONIC, &ts);
+
+
+        t = ((unsigned long long)ts.tv_sec) * 1000000000 + ts.tv_nsec;
+        return t;
+}
+
 int main(int argc UNUSED, char **argv UNUSED) {
     int      sock;
     plcConn* conn;
