@@ -43,7 +43,6 @@ PG_FUNCTION_INFO_V1(plcontainer_call_handler);
 extern unsigned long long delay_time;
 extern unsigned long long handle_call_time ;
 
-extern unsigned long long receive_time;
 extern unsigned long long py_pre_time ;
 extern unsigned long long charstar_convert2py_time ;
 extern unsigned long long py_exec_time ;
@@ -53,7 +52,6 @@ extern unsigned long long free_charstar_result_time ;
 
 extern unsigned long long gettime_nanosec(void);
 extern unsigned long long gettime_microsec(void);
-unsigned long long receive_time = 0;
 unsigned long long delay_time = 0;
 
 unsigned long long handle_call_time = 0;
