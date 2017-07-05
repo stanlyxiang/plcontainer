@@ -36,7 +36,7 @@ interpreted as representing official policies, either expressed or implied, of t
 #include <string.h>
 
 
-//extern unsigned long long qe_delay_time;
+extern unsigned long long qe_delay_time;
 extern unsigned long long delay_time;
 extern unsigned long long gettime_nanosec(void);
 static int message_start(plcConn *conn, char msgType);
@@ -766,7 +766,7 @@ static int receive_result(plcConn *conn, plcMessage **mRes) {
     ret = (plcMsgResult*) *mRes;
     ret->msgtype = MT_RESULT;
     res |= receive_uint64(conn, &ret->ts);
-    //qe_delay_time += ret->ts - gettime_nanosec();
+    qe_delay_time += ret->ts - gettime_nanosec();
     res |= receive_int32(conn, &ret->rows);
     res |= receive_int32(conn, &ret->cols);
     debug_print(WARNING, "Receiving function result of %d rows and %d columns",
