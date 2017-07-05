@@ -22,6 +22,7 @@
 
 extern unsigned long long gettime_nanosec(void);
 
+extern unsigned long long qe_delay_time;
 extern unsigned long long delay_time;
 extern unsigned long long handle_call_time ;
 extern unsigned long long receive_time;

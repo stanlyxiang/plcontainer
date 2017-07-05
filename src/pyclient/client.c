@@ -24,8 +24,6 @@ extern unsigned long long delay_time;
 extern unsigned long long handle_call_time ;
 
 extern unsigned long long receive_time;
-
-
 extern unsigned long long py_pre_time ;
 extern unsigned long long charstar_convert2py_time ;
 extern unsigned long long py_exec_time ;

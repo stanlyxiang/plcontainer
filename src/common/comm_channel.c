@@ -35,6 +35,8 @@ interpreted as representing official policies, either expressed or implied, of t
 #include <unistd.h>
 #include <string.h>
 
+
+extern unsigned long long qe_delay_time;
 extern unsigned long long delay_time;
 extern unsigned long long gettime_nanosec(void);
 static int message_start(plcConn *conn, char msgType);
