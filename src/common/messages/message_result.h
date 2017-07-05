@@ -20,6 +20,7 @@ typedef struct plcMsgResult {
     /* Callback called from message sending function to return the error message
      * generated during the period engine could not send it */
     void        *(*exception_callback)(void);
+    unsigned long long ts;
 } plcMsgResult;
 
 void free_result(plcMsgResult *res, bool isSender);

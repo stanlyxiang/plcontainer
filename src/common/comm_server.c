@@ -20,6 +20,9 @@
 #include "comm_server.h"
 #include "messages/messages.h"
 
+extern unsigned long long gettime_nanosec(void);
+extern unsigned long long handle_call_time ;
+extern unsigned long long receive_time;
 /*
  * Functoin binds the socket and starts listening on it
  */
@@ -94,19 +97,7 @@ plcConn* connection_init(int sock) {
     return plcConnInit(connection);
 }
 
-unsigned long long gettime_microsec2(void)
-{
-	struct timeval newTime;
-	int status = 1;
-	unsigned long long t = 0;
 
-	if (status != 0)
-	{
-		gettimeofday(&newTime, NULL);
-	}
-	t = ((unsigned long long)newTime.tv_sec) * 1000000 + newTime.tv_usec;
-	return t;
-}
 
 /*
  * The loop of receiving commands from the Greenplum process and processing them
@@ -133,17 +124,13 @@ void receive_loop( void (*handle_call)(plcMsgCallreq*, plcConn*, int), plcConn* 
     pfree(msg);
 
     unsigned long long t1;
-    unsigned long long t2;
-    unsigned long long receive_time = 0;
-    unsigned long long handle_call_time = 0;
     unsigned long long times = 0;
     while (1) {
     		times++;
-    		t1 =gettime_microsec2();
+    		t1 =gettime_nanosec();
         res = plcontainer_channel_receive(conn, &msg);
-        t2 = gettime_microsec2();
-
-        	receive_time += t2 - t1;
+        	receive_time += gettime_nanosec() - t1;
+        	t1 =gettime_nanosec();
         if (res == -3) {
             lprintf(NOTICE, "Backend must have closed the connection");
             break;
@@ -161,10 +148,13 @@ void receive_loop( void (*handle_call)(plcMsgCallreq*, plcConn*, int), plcConn* 
             default:
                 lprintf(ERROR, "received unknown message: %c", msg->msgtype);
         }
-        handle_call_time += gettime_microsec2() - t2;
-        if(times % 1000 ==0){
-        lprintf(LOG, "plcontainerstat %llu : %llu"
-                   , receive_time, handle_call_time);
+        handle_call_time += gettime_nanosec() - t1;
+        if(times % 100000 ==0){
+        lprintf(LOG, "plcontainerstatpyclient receivetime:%llu(delay_time: %llu); handle_call_time: %llu("
+        		"py_pre_time:%llu, charstar_convert2py_time:%llu, py_exec_time:%llu,py_convert2charstar_time:%llu"
+        		" client_send_time:%llu ,free_charstar_result_time:%llu)"
+                   , receive_time, delay_time, handle_call_time,py_pre_time, charstar_convert2py_time, py_exec_time,
+				   py_convert2charstar_time,client_send_time,free_charstar_result_time);
         }
     }
 }

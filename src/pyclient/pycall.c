@@ -22,12 +22,20 @@
 
 #include <Python.h>
 
+
+
+
+extern unsigned long long gettime_nanosec(void);
+extern unsigned long long handle_call_time ;
+extern unsigned long long receive_time;
+
+
+
 plcConn* plcconn_global = NULL;
 
 static char *create_python_func(plcMsgCallreq *req);
 static PyObject *arguments_to_pytuple(plcPyFunction *pyfunc, int tupleIndex);
-static int process_call_results(plcConn *conn, PyObject *retval, plcPyFunction *pyfunc,
-								unsigned long long *m10, unsigned long long *m11, unsigned long long *m12, unsigned long long *m13);
+static int process_call_results(plcConn *conn, PyObject *retval, plcPyFunction *pyfunc);
 static int fill_rawdata(rawdata *res, PyObject *retval, plcPyFunction *pyfunc);
 
 static PyObject *PyMainModule = NULL;
@@ -108,21 +116,6 @@ int python_init() {
     return 0;
 }
 
-unsigned long long gettime_microsec3(void)
-{
-	struct timeval newTime;
-	int status = 1;
-	unsigned long long t = 0;
-
-	if (status != 0)
-	{
-		gettimeofday(&newTime, NULL);
-	}
-	t = ((unsigned long long)newTime.tv_sec) * 1000000 + newTime.tv_usec;
-	return t;
-}
-
-
 void handle_call(plcMsgCallreq *req, plcConn *conn, int times) {
     PyObject      *retval = NULL;
     PyObject      *dict = NULL;
@@ -142,31 +135,24 @@ void handle_call(plcMsgCallreq *req, plcConn *conn, int times) {
     plc_sending_data = 0;
     plc_is_execution_terminated = 0;
 
-    t1 =gettime_microsec3();
+    t1 =gettime_nanosec();
     dict = PyModule_GetDict(PyMainModule); // Returns borrowed reference
     if (dict == NULL) {
         raise_execution_error("Cannot get '__main__' module contents in Python");
         return;
     }
     pyfunc = plc_py_function_cache_get(req->objectid);
-    m1 += gettime_microsec3() -t1;
-    t1 =gettime_microsec3();
     if (pyfunc == NULL || req->hasChanged) {
         char     *func;
         PyObject *val;
 
         /* Parse request to get funcion structure */
         pyfunc = plc_py_init_function(req);
-        m2 += gettime_microsec3() -t1;
-        t1 =gettime_microsec3();
         /* Modify function code for compiling it into Python object */
         func = create_python_func(req);
         if (func == NULL) {
             return;
         }
-        m3 += gettime_microsec3() -t1;
-        t1 =gettime_microsec3();
-
         /* The function will be in the dictionary because it was wrapped with "def proc_name:... " */
         val = PyRun_String(func, Py_single_input, dict, dict); // Returns new reference
         if (val == NULL) {
@@ -175,8 +161,6 @@ void handle_call(plcMsgCallreq *req, plcConn *conn, int times) {
         }
         Py_DECREF(val);
         free(func);
-        m4 += gettime_microsec3() -t1;
-        t1 =gettime_microsec3();
 
         /* get the function from the global dictionary, returns borrowed reference */
         val = PyDict_GetItemString(dict, req->proc.name);
@@ -197,17 +181,17 @@ void handle_call(plcMsgCallreq *req, plcConn *conn, int times) {
         return;
     }
     int i;
-    m5 += gettime_microsec3() -t1;
-    t1 =gettime_microsec3();
+    py_pre_time += gettime_nanosec() -t1;
+    t1 =gettime_nanosec();
     for(i = 0; i < req->tupleCount ; i++) {
-    		t2 =gettime_microsec3();
+    		t2 =gettime_nanosec();
 		args = arguments_to_pytuple(pyfunc, i);
 		if (args == NULL) {
 			raise_execution_error("Cannot convert input arguments to Python tuple");
 			return;
 		}
-		m6 += gettime_microsec3() -t2;
-		t2 =gettime_microsec3();
+		charstar_convert2py_time += gettime_nanosec() -t2;
+		t2 =gettime_nanosec();
 
 		/* call the function */
 		plc_is_execution_terminated = 0;
@@ -217,23 +201,16 @@ void handle_call(plcMsgCallreq *req, plcConn *conn, int times) {
 			raise_execution_error("Exception occurred in Python during function execution");
 			return;
 		}
-		m7 += gettime_microsec3() -t2;
-		t2 =gettime_microsec3();
+		py_exec_time += gettime_nanosec() -t2;
+		t2 =gettime_nanosec();
 		if (plc_is_execution_terminated == 0) {
-			process_call_results(conn, retval, pyfunc, &m10,&m11,&m12,&m13);
+			process_call_results(conn, retval, pyfunc);
 		}
-		m8 += gettime_microsec3() -t2;
-		t2 =gettime_microsec3();
 		Py_XDECREF(args);
 	    Py_XDECREF(retval);
     }
-    m9 += gettime_microsec3() -t1;
+    m9 += gettime_nanosec() -t1;
 
-
-    if(times  % 1000 == 0){
-    lprintf(LOG, "plcontainerstat %llu : %llu : %llu : %llu : %llu : %llu : %llu : %llu: %llu.  plcontainerstate more detail: %llu : %llu : %llu: %llu. "
-              , m1, m2,m3,m4,m5,m6,m7,m8,m9, m10,m11,m12,m13);
-    }
     pyfunc->call = NULL;
 
 
@@ -384,11 +361,10 @@ static PyObject *arguments_to_pytuple(plcPyFunction *pyfunc, int tupleIndex) {
     return args;
 }
 
-static int process_call_results(plcConn *conn, PyObject *retval, plcPyFunction *pyfunc, unsigned long long *m10,
-		unsigned long long *m11, unsigned long long *m12, unsigned long long *m13) {
+static int process_call_results(plcConn *conn, PyObject *retval, plcPyFunction *pyfunc) {
     plcMsgResult *res;
     int           retcode = 0;
-    unsigned long long t = gettime_microsec3();
+    unsigned long long t = gettime_nanosec();
     /* allocate a result */
     res           = malloc(sizeof(plcMsgResult));
     res->msgtype  = MT_RESULT;
@@ -399,8 +375,6 @@ static int process_call_results(plcConn *conn, PyObject *retval, plcPyFunction *
     res->exception_callback = plc_error_callback;
     plc_py_copy_type(&res->types[0], &pyfunc->res);
 
-    *m10 += gettime_microsec3() - t;
-    	t = gettime_microsec3();
     /* Now we support only functions returning single column */
     res->cols = 1;
 
@@ -456,8 +430,9 @@ static int process_call_results(plcConn *conn, PyObject *retval, plcPyFunction *
         retcode = fill_rawdata(&res->data[0][0], retval, pyfunc);
     }
 
-    *m11 += gettime_microsec3() - t;
-	t = gettime_microsec3();
+    py_convert2charstar_time += gettime_nanosec() - t;
+	t = gettime_nanosec();
+	res->ts = t;
 
     /* If the output operation succeeded we send the result back */
     if (retcode == 0) {
@@ -467,15 +442,15 @@ static int process_call_results(plcConn *conn, PyObject *retval, plcPyFunction *
         plc_sending_data = 0;
     }
 
-    *m12 += gettime_microsec3() - t;
-	t = gettime_microsec3();
+    client_send_time += gettime_nanosec() - t;
+	t = gettime_nanosec();
 
     free_result(res, true);
 
     /* After the message is sent we can safely send exceptions */
     plc_raise_delayed_error();
 
-    *m13 += gettime_microsec3() - t;
+    free_charstar_result_time += gettime_nanosec() - t;
 
     return retcode;
 }
