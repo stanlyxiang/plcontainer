@@ -21,8 +21,19 @@
 #include "messages/messages.h"
 
 extern unsigned long long gettime_nanosec(void);
+
+extern unsigned long long delay_time;
 extern unsigned long long handle_call_time ;
 extern unsigned long long receive_time;
+extern unsigned long long py_pre_time ;
+extern unsigned long long charstar_convert2py_time ;
+extern unsigned long long py_exec_time ;
+extern unsigned long long py_convert2charstar_time ;
+extern unsigned long long client_send_time ;
+extern unsigned long long free_charstar_result_time ;
+
+
+
 /*
  * Functoin binds the socket and starts listening on it
  */

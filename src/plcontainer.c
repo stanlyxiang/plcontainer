@@ -44,20 +44,6 @@ static void plcontainer_process_exception(plcMsgError *msg);
 static void plcontainer_process_sql(plcMsgSQL *msg, plcConn* conn);
 static void plcontainer_process_log(plcMsgLog *log);
 
-uint64 gettime_microsec(void)
-{
-        struct timeval newTime;
-        int status = 1;
-        uint64 t = 0;
-
-        if (status != 0)
-        {
-                gettimeofday(&newTime, NULL);
-        }
-        t = ((uint64)newTime.tv_sec) * 1000000 + newTime.tv_usec;
-        return t;
-}
-
 
 uint64 gettime_nanosec(void)
 {
@@ -74,7 +60,7 @@ uint64 gettime_nanosec(void)
 
 Datum plcontainer_call_handler(PG_FUNCTION_ARGS) {
 	uint64 t1,t2;
-	t1= gettime_microsec();
+	t1= gettime_nanosec();
     Datum datumreturn = (Datum) 0;
     MemoryContext oldMC = NULL;
     int ret;
@@ -121,11 +107,11 @@ Datum plcontainer_call_handler(PG_FUNCTION_ARGS) {
              SPI_result_code_string(ret));
 
     pl_container_caller_context = oldMC;
-    t2= gettime_microsec();
+    t2= gettime_nanosec();
     total_handler_time += t2-t1;
     pl_tuple_count++;
-    if(pl_tuple_count % 500 == 0){
-    		elog(LOG, "plcontainerstat %llu : %llu : %llu : %llu : %llu : %llu : %llu"
+    if(pl_tuple_count % 100000 == 0){
+    	elog(LOG, "plcontainerstat %llu : %llu : %llu : %llu : %llu : %llu : %llu"
                , plcontainer_create_call_time, send_time,free_time, mm1,mm2,receive_time, total_handler_time);
     }
     return datumreturn;
@@ -209,9 +195,9 @@ static plcProcResult *plcontainer_get_result(FunctionCallInfo  fcinfo,
     plcProcResult *result = NULL;
 //for 1K loop
     uint64 t1,t2;
-    t1= gettime_microsec();
+    t1= gettime_nanosec();
     req = plcontainer_create_call(fcinfo, pinfo);
-    t2=gettime_microsec();
+    t2=gettime_nanosec();
     plcontainer_create_call_time += t2-t1;
     name = parse_container_meta(req->proc.src);
     conn = find_container(name);
@@ -228,23 +214,23 @@ static plcProcResult *plcontainer_get_result(FunctionCallInfo  fcinfo,
     pfree(name);
 
     if (conn != NULL) {
-    		t1= gettime_microsec();
+    		t1= gettime_nanosec();
     		req->ts = gettime_nanosec();
         plcontainer_channel_send(conn, (plcMessage*)req);
-        t2 = gettime_microsec();
+        t2 = gettime_nanosec();
         send_time += t2-t1;
         free_callreq(req, true, true);
 
-        free_time += gettime_microsec() - t2;
-        t1= gettime_microsec();
+        free_time += gettime_nanosec() - t2;
+        t1= gettime_nanosec();
         int resCount = 0;
         while (1) {
             int res = 0;
             plcMessage *answer;
-            t2 = gettime_microsec();
+            t2 = gettime_nanosec();
             res = plcontainer_channel_receive(conn, &answer);
-            mm1 += gettime_microsec()-t2;
-            t2 = gettime_microsec();
+            mm1 += gettime_nanosec()-t2;
+            t2 = gettime_nanosec();
             if (res < 0) {
                 elog(ERROR, "Error receiving data from the client, %d", res);
                 break;
@@ -281,10 +267,10 @@ static plcProcResult *plcontainer_get_result(FunctionCallInfo  fcinfo,
             			break;
             		}
             }
-            mm2 += gettime_microsec()-t2;
-            t2 = gettime_microsec();
+            mm2 += gettime_nanosec()-t2;
+            t2 = gettime_nanosec();
         }
-        receive_time += gettime_microsec() - t1;
+        receive_time += gettime_nanosec() - t1;
     }
     //end 1000 loop
     return result;
