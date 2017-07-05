@@ -107,19 +107,6 @@ static void plcontainer_process_sql(plcMsgSQL *msg, plcConn* conn);
 static void plcontainer_process_log(plcMsgLog *log);
 
 
-uint64 gettime_nanosec(void)
-{
-
-        uint64 t = 0;
-
-        struct timespec ts;
-        clock_gettime(CLOCK_MONOTONIC, &ts);
-
-
-        t = ((uint64)ts.tv_sec) * 1000000000 + ts.tv_nsec;
-        return t;
-}
-
 Datum plcontainer_call_handler(PG_FUNCTION_ARGS) {
 	uint64 t1,t2;
 	t1= gettime_nanosec();
