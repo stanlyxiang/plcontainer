@@ -33,6 +33,68 @@ PG_MODULE_MAGIC;
 
 PG_FUNCTION_INFO_V1(plcontainer_call_handler);
 
+
+
+
+
+
+
+
+extern unsigned long long delay_time;
+extern unsigned long long handle_call_time ;
+
+extern unsigned long long receive_time;
+extern unsigned long long py_pre_time ;
+extern unsigned long long charstar_convert2py_time ;
+extern unsigned long long py_exec_time ;
+extern unsigned long long py_convert2charstar_time ;
+extern unsigned long long client_send_time ;
+extern unsigned long long free_charstar_result_time ;
+
+extern unsigned long long gettime_nanosec(void);
+extern unsigned long long gettime_microsec(void);
+unsigned long long receive_time = 0;
+unsigned long long delay_time = 0;
+
+unsigned long long handle_call_time = 0;
+unsigned long long py_exec_time = 0;
+unsigned long long py_pre_time = 0;
+unsigned long long charstar_convert2py_time = 0;
+unsigned long long free_charstar_result_time = 0;
+unsigned long long client_send_time = 0;
+unsigned long long py_convert2charstar_time = 0;
+
+
+unsigned long long gettime_microsec(void)
+{
+	struct timeval newTime;
+	int status = 1;
+	unsigned long long t = 0;
+
+	if (status != 0)
+	{
+		gettimeofday(&newTime, NULL);
+	}
+	t = ((unsigned long long)newTime.tv_sec) * 1000000 + newTime.tv_usec;
+	return t;
+}
+
+
+unsigned long long gettime_nanosec(void)
+{
+
+	unsigned long long t = 0;
+
+        struct timespec ts;
+        clock_gettime(CLOCK_MONOTONIC, &ts);
+
+
+        t = ((unsigned long long)ts.tv_sec) * 1000000000 + ts.tv_nsec;
+        return t;
+}
+
+
+
 static Datum plcontainer_call_hook(PG_FUNCTION_ARGS);
 static plcProcResult *plcontainer_get_result(FunctionCallInfo  fcinfo,
                                              plcProcInfo      *pinfo,
