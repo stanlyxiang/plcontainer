@@ -20,13 +20,14 @@
 #include "pycall.h"
 #include "pyerror.h"
 
-extern unsigned long long delay_time = 0;
-extern unsigned long long handle_call_time =0;
-extern unsigned long long serialize_time = 0;
-extern unsigned long long receive_time=0;
+extern unsigned long long delay_time;
+//extern unsigned long long handle_call_time =0;
+//extern unsigned long long serialize_time = 0;
+//extern unsigned long long receive_time=0;
 
 extern unsigned long long gettime_nanosec(void);
 
+unsigned long long delay_time = 0;
 
 unsigned long long gettime_nanosec(void)
 {
