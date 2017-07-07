@@ -126,6 +126,7 @@ static plcCurlBuffer *plcCurlRESTAPICallGarden(plcCurlCallType cType,
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, plcCurlCallback);
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void*)buffer);
 
+        elog(WARNING,"hack%s",msg )
         /* Calling the API */
         res = curl_easy_perform(curl);
         if (res != CURLE_OK) {
@@ -239,7 +240,7 @@ int plc_garden_run_container(int sockfd UNUSED, char *name, int *port) {
 
     //get container port here.
 	if (res == 0) {
-		elog(ERROR, "hackday: %s\n", response->data);
+		elog(WARNING, "hackday: %s\n", response->data);
 		*port = *(int*)response->data;
 	}
 
