@@ -30,7 +30,7 @@ static char *plc_garden_url = "10.152.10.138:8088";
 static plcCurlBuffer *plcCurlBufferInit();
 static void plcCurlBufferFree(plcCurlBuffer *buf);
 static size_t plcCurlCallback(void *contents, size_t size, size_t nmemb, void *userp);
-static plcCurlBuffer *plcCurlRESTAPICall(plcCurlCallType cType,
+static plcCurlBuffer *plcCurlRESTAPICallGarden(plcCurlCallType cType,
                                          char *url,
                                          char *body,
                                          long expectedReturn,
@@ -78,7 +78,7 @@ static size_t plcCurlCallback(void *contents, size_t size, size_t nmemb, void *u
 }
 
 /* Function for calling Docker REST API using Curl */
-static plcCurlBuffer *plcCurlRESTAPICall(plcCurlCallType cType,
+static plcCurlBuffer *plcCurlRESTAPICallGarden(plcCurlCallType cType,
                                          char *body,
                                          long expectedReturn,
                                          bool silent) {
@@ -189,7 +189,7 @@ int plc_garden_start_container(int sockfd UNUSED, plcContainer *cont, char **nam
     sprintf(messageBody, opt);
 
     /* Make a call */
-    response = plcCurlRESTAPICall(PLC_CALL_HTTPGET, messageBody, 201, false);
+    response = plcCurlRESTAPICallGarden(PLC_CALL_HTTPGET, messageBody, 201, false);
     res = response->status;
 
     /* Free up intermediate data */
@@ -217,7 +217,7 @@ int plc_garden_stop_container(int sockfd UNUSED, char *name) {
     messageBody = palloc(strlen(opt) + strlen(name) + 2);
     sprintf(messageBody, "%s%s", opt, name);
 
-    response = plcCurlRESTAPICall(PLC_CALL_HTTPGET, messageBody, 204, false);
+    response = plcCurlRESTAPICallGarden(PLC_CALL_HTTPGET, messageBody, 204, false);
     res = response->status;
 
     pfree(messageBody);
@@ -235,7 +235,7 @@ int plc_garden_run_container(int sockfd UNUSED, char *name, int *port) {
     messageBody = palloc(strlen(opt) + strlen(name) + 2);
     sprintf(messageBody,"%s%s", opt, name);
 
-    response = plcCurlRESTAPICall(PLC_CALL_HTTPGET, messageBody, 204, false);
+    response = plcCurlRESTAPICallGarden(PLC_CALL_HTTPGET, messageBody, 204, false);
     res = response->status;
 
     //get container port here.
