@@ -95,9 +95,10 @@ static plcCurlBuffer *plcCurlRESTAPICallGarden(plcCurlCallType cType,
         struct curl_slist *headers = NULL; // init to NULL is important
 
         char *msg = NULL;
-        msg = palloc(strlen(body)+strlen(plc_garden_url)+10);
 
         char *output = curl_easy_escape(curl, body, strlen(body)+1);
+
+        msg = palloc(strlen(plc_garden_url) + strlen(output) + 10);
         sprintf(msg, "%s/?%s", plc_garden_url, output);
         /* Setting up request URL */
 
@@ -129,7 +130,7 @@ static plcCurlBuffer *plcCurlRESTAPICallGarden(plcCurlCallType cType,
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, plcCurlCallback);
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void*)buffer);
 
-        elog(WARNING,"hack%s",output );
+        elog(WARNING,"hack %s",output );
         /* Calling the API */
         res = curl_easy_perform(curl);
         if (res != CURLE_OK) {
