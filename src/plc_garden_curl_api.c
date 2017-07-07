@@ -241,9 +241,19 @@ int plc_garden_run_container(int sockfd UNUSED, char *name, int *port) {
     char *opt = "query=run%26name=";
     char *messageBody = NULL;
     int res = 0;
-    char* name2="test5";
-    messageBody = palloc(strlen(opt) + strlen(name2) + 2);
-    sprintf(messageBody,"%s%s", opt, name2);
+    char* name2= palloc(strlen(name)+ 40);
+    int i=0,j=0;
+    for(i =0;i<strlen(name);i++){
+        if(name[i] == '-'){
+		name2[j++]= 'A';
+		name2[j++]= 'A';
+		name2[j++]= 'A';
+	}
+	name2[j++] = name[i];
+    }
+    messageBody = palloc(strlen(opt) + strlen(name) + 2);
+    sprintf(messageBody,"%s%s", opt, name);
+    pfree(name2);
 
     response = plcCurlRESTAPICallGarden(PLC_CALL_HTTPGET, messageBody, 200, false);
     res = response->status;
@@ -251,7 +261,8 @@ int plc_garden_run_container(int sockfd UNUSED, char *name, int *port) {
     //get container port here.
 	if (res == 0) {
 		elog(WARNING, "hackday run: %s\n", response->data);
-		*port = *(int*)response->data;
+		*port = atoi(response->data);
+                elog(WARNING, "hackday run: %d\n", *port);
 	}
 
     pfree(messageBody);
