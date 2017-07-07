@@ -210,7 +210,7 @@ int plc_garden_start_container(int sockfd UNUSED, plcContainer *cont, char **nam
 
 int plc_garden_stop_container(int sockfd UNUSED, char *name) {
     plcCurlBuffer *response = NULL;
-    char *opt = "query=stop&name=";
+    char *opt = "query=stop&amp;name=";
     char *messageBody = NULL;
     int res = 0;
 
@@ -228,7 +228,7 @@ int plc_garden_stop_container(int sockfd UNUSED, char *name) {
 
 int plc_garden_run_container(int sockfd UNUSED, char *name, int *port) {
     plcCurlBuffer *response = NULL;
-    char *opt = "query=run&name=";
+    char *opt = "query=run&amp;name=";
     char *messageBody = NULL;
     int res = 0;
 
