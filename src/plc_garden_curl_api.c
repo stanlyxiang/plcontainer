@@ -56,6 +56,8 @@ static void plcCurlBufferFree(plcCurlBuffer *buf) {
 
 /* Curl callback for receiving a chunk of data into buffer */
 static size_t plcCurlCallback(void *contents, size_t size, size_t nmemb, void *userp) {
+
+	elog(WARNING, "hackday callback: %s\n", contents);
     size_t realsize = size * nmemb;
     plcCurlBuffer *mem = (plcCurlBuffer*)userp;
 
@@ -73,6 +75,7 @@ static size_t plcCurlCallback(void *contents, size_t size, size_t nmemb, void *u
     mem->size += realsize;
     mem->data[mem->size] = 0;
 
+    elog(WARNING, "hackday callback 2 : %d,  %s\n", mem->size, mem->data);
     return realsize;
 }
 
