@@ -358,7 +358,8 @@ plcConn *plcConnect(int port) {
         return result;
     }
 
-    server = gethostbyname("localhost");
+    //server = gethostbyname("localhost");
+    server = gethostbyname("10.152.10.138");
     if (server == NULL) {
         lprintf(ERROR, "PLContainer: Failed to call gethostbyname('localhost')");
         return result;

@@ -23,7 +23,7 @@
 #include "containers.h"
 
 #ifdef CURL_DOCKER_API
-    #include "plc_docker_curl_api.h"
+    #include "plc_garden_curl_api.h"
 #else
     #include "plc_docker_api.h"
 #endif
@@ -38,8 +38,6 @@ typedef struct {
 static int containers_init = 0;
 static container_t *containers;
 
-static void insert_container(char *image, char *dockerid, plcConn *conn);
-static void init_containers();
 static inline bool is_whitespace (const char c);
 
 #ifndef CONTAINER_DEBUG
@@ -67,10 +65,9 @@ static void cleanup(char *dockerid) {
             /* Connect to the Docker API and execute "wait" command for the
              * target container to wait for its termination */
             start = clock();
-            sockfd = plc_docker_connect();
+            sockfd = plc_garden_connect();
             if (sockfd > 0) {
-                res = plc_docker_wait_container(sockfd, dockerid);
-                plc_docker_disconnect(sockfd);
+                plc_garden_disconnect(sockfd);
             } else {
                 res = -1;
             }
@@ -94,14 +91,14 @@ static void cleanup(char *dockerid) {
         }
 
         /* Connect to the Docker API to remove the container */
-        sockfd = plc_docker_connect();
+        sockfd = plc_garden_connect();
         if (sockfd > 0) {
-            res = plc_docker_delete_container(sockfd, dockerid);
+            //res = plc_garden_stop_container(sockfd, dockerid);
             if (res < 0) {
                 _exit(1);
             }
         }
-        plc_docker_disconnect(sockfd);
+        plc_garden_disconnect(sockfd);
 
         _exit(0);
     }
@@ -109,92 +106,47 @@ static void cleanup(char *dockerid) {
 
 #endif /* not CONTAINER_DEBUG */
 
-static void insert_container(char *image, char *dockerid, plcConn *conn) {
-    size_t i;
-    for (i = 0; i < CONTAINER_NUMBER; i++) {
-        if (containers[i].name == NULL) {
-            containers[i].name     = plc_top_strdup(image);
-            containers[i].conn     = conn;
-            containers[i].dockerid = NULL;
-            if (dockerid != NULL) {
-                containers[i].dockerid = plc_top_strdup(dockerid);
-            }
-            return;
-        }
-    }
-    // Fatal would cause the session to be closed
-    elog(FATAL, "Single session cannot handle more than %d open containers simultaneously", CONTAINER_NUMBER);
-}
-
-static void init_containers() {
-    containers = (container_t*)plc_top_alloc(CONTAINER_NUMBER * sizeof(container_t));
-    memset(containers, 0, CONTAINER_NUMBER * sizeof(container_t));
-    containers_init = 1;
-}
-
-plcConn *find_container(const char *image) {
-    size_t i;
-    if (containers_init == 0)
-        init_containers();
-    for (i = 0; i < CONTAINER_NUMBER; i++) {
-        if (containers[i].name != NULL &&
-            strcmp(containers[i].name, image) == 0) {
-            return containers[i].conn;
-        }
-    }
-
-    return NULL;
-}
-
 plcConn *start_container(plcContainer *cont) {
     int port;
     unsigned int sleepus = 25000;
     unsigned int sleepms = 0;
     plcMsgPing *mping = NULL;
     plcConn *conn = NULL;
-    char *dockerid = NULL;
+    char *name = NULL;
 
 #ifdef CONTAINER_DEBUG
-
     port = 8080;
-
 #else
 
     int sockfd;
     int res = 0;
 
-    sockfd = plc_docker_connect();
+    sockfd = plc_garden_connect();
     if (sockfd < 0) {
         elog(ERROR, "Cannot connect to the Docker API socket");
         return conn;
     }
 
-    res = plc_docker_create_container(sockfd, cont, &dockerid);
-    if (res < 0) {
-        elog(ERROR, "Cannot create Docker container");
-        return conn;
-    }
-
-    res = plc_docker_start_container(sockfd, dockerid);
+    res = plc_garden_start_container(sockfd, cont, &name);
     if (res < 0) {
         elog(ERROR, "Cannot start Docker container");
         return conn;
     }
 
-    res = plc_docker_inspect_container(sockfd, dockerid, &port);
+    res = plc_garden_run_container(sockfd, name, &port);
     if (res < 0) {
-        elog(ERROR, "Cannot parse host port exposed by Docker container");
+        elog(ERROR, "Cannot run Docker container");
         return conn;
     }
 
-    res = plc_docker_disconnect(sockfd);
+    res = plc_garden_disconnect(sockfd);
     if (res < 0) {
         elog(ERROR, "Cannot disconnect from the Docker API socket");
         return conn;
     }
 
     /* Create a process to clean up the container after it finishes */
-    cleanup(dockerid);
+    cleanup(name);
 
 #endif // CONTAINER_DEBUG
 
@@ -231,11 +183,9 @@ plcConn *start_container(plcContainer *cont) {
         elog(ERROR, "Cannot connect to the container, %d ms timeout reached",
                     CONTAINER_CONNECT_TIMEOUT_MS);
         conn = NULL;
-    } else {
-        insert_container(cont->name, dockerid, conn);
     }
 
-    pfree(dockerid);
+    pfree(name);
 
     return conn;
 }
@@ -256,10 +206,10 @@ void stop_containers() {
                 if (containers[i].dockerid != NULL) {
                     int sockfd;
 
-                    sockfd = plc_docker_connect();
+                    sockfd = plc_garden_connect();
                     if (sockfd > 0) {
-                        plc_docker_kill_container(sockfd, containers[i].dockerid);
-                        plc_docker_disconnect(sockfd);
+                        //plc_docker_kill_container(sockfd, containers[i].dockerid);
+                        plc_garden_disconnect(sockfd);
                     }
                     pfree(containers[i].dockerid);
                 }
