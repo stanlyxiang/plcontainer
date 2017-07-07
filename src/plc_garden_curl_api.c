@@ -188,7 +188,7 @@ int plc_garden_start_container(int sockfd UNUSED, plcContainer *cont, char **nam
     sprintf(messageBody, opt);
 
     /* Make a call */
-    response = plcCurlRESTAPICallGarden(PLC_CALL_HTTPGET, messageBody, 201, false);
+    response = plcCurlRESTAPICallGarden(PLC_CALL_HTTPGET, messageBody, 200, false);
     res = response->status;
 
     /* Free up intermediate data */
@@ -216,7 +216,7 @@ int plc_garden_stop_container(int sockfd UNUSED, char *name) {
     messageBody = palloc(strlen(opt) + strlen(name) + 2);
     sprintf(messageBody, "%s%s", opt, name);
 
-    response = plcCurlRESTAPICallGarden(PLC_CALL_HTTPGET, messageBody, 204, false);
+    response = plcCurlRESTAPICallGarden(PLC_CALL_HTTPGET, messageBody, 200, false);
     res = response->status;
 
     pfree(messageBody);
@@ -234,7 +234,7 @@ int plc_garden_run_container(int sockfd UNUSED, char *name, int *port) {
     messageBody = palloc(strlen(opt) + strlen(name) + 2);
     sprintf(messageBody,"%s%s", opt, name);
 
-    response = plcCurlRESTAPICallGarden(PLC_CALL_HTTPGET, messageBody, 204, false);
+    response = plcCurlRESTAPICallGarden(PLC_CALL_HTTPGET, messageBody, 200, false);
     res = response->status;
 
     //get container port here.
