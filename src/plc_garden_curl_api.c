@@ -98,13 +98,15 @@ static plcCurlBuffer *plcCurlRESTAPICallGarden(plcCurlCallType cType,
         struct curl_slist *headers = NULL; // init to NULL is important
 
         char *msg = NULL;
-
-        char *output = curl_easy_escape(curl, body, strlen(body)+1);
-
-        msg = palloc(strlen(plc_garden_url) + strlen(output) + 10);
-        sprintf(msg, "%s/?%s", plc_garden_url, output);
+	elog(WARNING,"hackurl%s",body);
+        //char *output = curl_easy_escape(curl, body, strlen(body));
+	//output = body;
+	
+	//elog(WARNING,"hackurl2%s:%d",output,strlen(output));
+        msg = palloc(strlen(plc_garden_url) + strlen(body) + 10);
+        sprintf(msg, "%s/?%s", plc_garden_url, body);
         /* Setting up request URL */
-
+	//curl_free(output);
         curl_easy_setopt(curl, CURLOPT_URL, msg);
 
         /* Providing a buffer to store errors in */
@@ -218,7 +220,7 @@ int plc_garden_start_container(int sockfd UNUSED, plcContainer *cont, char **nam
 
 int plc_garden_stop_container(int sockfd UNUSED, char *name) {
     plcCurlBuffer *response = NULL;
-    char *opt = "query=stop'&'name=";
+    char *opt = "query=stop%26name=";
     char *messageBody = NULL;
     int res = 0;
 
@@ -236,12 +238,12 @@ int plc_garden_stop_container(int sockfd UNUSED, char *name) {
 
 int plc_garden_run_container(int sockfd UNUSED, char *name, int *port) {
     plcCurlBuffer *response = NULL;
-    char *opt = "query=run'&'name=";
+    char *opt = "query=run%26name=";
     char *messageBody = NULL;
     int res = 0;
-
-    messageBody = palloc(strlen(opt) + strlen(name) + 2);
-    sprintf(messageBody,"%s%s", opt, name);
+    char* name2="test5";
+    messageBody = palloc(strlen(opt) + strlen(name2) + 2);
+    sprintf(messageBody,"%s%s", opt, name2);
 
     response = plcCurlRESTAPICallGarden(PLC_CALL_HTTPGET, messageBody, 200, false);
     res = response->status;
