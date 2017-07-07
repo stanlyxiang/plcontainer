@@ -168,6 +168,7 @@ static plcProcResult *plcontainer_get_result(FunctionCallInfo  fcinfo,
 
     req = plcontainer_create_call(fcinfo, pinfo);
     name = parse_container_meta(req->proc.src);
+    conn = find_container(name);
     if (conn == NULL) {
         plcContainer *cont = NULL;
         cont = plc_get_container_config(name);

@@ -42,6 +42,56 @@ static inline bool is_whitespace (const char c);
 
 #ifndef CONTAINER_DEBUG
 
+
+static void insert_container(char *image, char *dockerid, plcConn *conn);
+static void init_containers();
+
+
+
+
+static void insert_container(char *image, char *dockerid, plcConn *conn) {
+    size_t i;
+    for (i = 0; i < CONTAINER_NUMBER; i++) {
+        if (containers[i].name == NULL) {
+            containers[i].name     = plc_top_strdup(image);
+            containers[i].conn     = conn;
+            containers[i].dockerid = NULL;
+            if (dockerid != NULL) {
+                containers[i].dockerid = plc_top_strdup(dockerid);
+            }
+            return;
+        }
+    }
+    // Fatal would cause the session to be closed
+    elog(FATAL, "Single session cannot handle more than %d open containers simultaneously", CONTAINER_NUMBER);
+}
+
+
+static void init_containers() {
+    containers = (container_t*)plc_top_alloc(CONTAINER_NUMBER * sizeof(container_t));
+    memset(containers, 0, CONTAINER_NUMBER * sizeof(container_t));
+    containers_init = 1;
+}
+
+
+
+plcConn *find_container(const char *image) {
+    size_t i;
+    if (containers_init == 0)
+        init_containers();
+    for (i = 0; i < CONTAINER_NUMBER; i++) {
+        if (containers[i].name != NULL &&
+            strcmp(containers[i].name, image) == 0) {
+            return containers[i].conn;
+        }
+    }
+
+    return NULL;
+}
+
+
+
+
 static void cleanup(char *dockerid) {
     pid_t pid = 0;
 
@@ -183,6 +233,9 @@ plcConn *start_container(plcContainer *cont) {
         elog(ERROR, "Cannot connect to the container, %d ms timeout reached",
                     CONTAINER_CONNECT_TIMEOUT_MS);
         conn = NULL;
+    }else
+    {
+    		insert_container(cont->name, name, conn);
     }
 
     pfree(name);
