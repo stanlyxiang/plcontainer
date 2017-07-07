@@ -149,7 +149,7 @@ static plcCurlBuffer *plcCurlRESTAPICall(plcCurlCallType cType,
             } else {
                 if (!silent) {
                     elog(ERROR, "Curl call to '%s' returned error code %ld, error '%s'\n",
-                           fullurl, http_code, buffer->data);
+                    		msg, http_code, buffer->data);
                 }
                 buffer->status = -3;
             }
