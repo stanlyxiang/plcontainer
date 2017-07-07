@@ -57,7 +57,7 @@ static void plcCurlBufferFree(plcCurlBuffer *buf) {
 /* Curl callback for receiving a chunk of data into buffer */
 static size_t plcCurlCallback(void *contents, size_t size, size_t nmemb, void *userp) {
 
-	elog(WARNING, "hackday callback: %s\n", contents);
+	//elog(WARNING, "hackday callback: %s\n", contents);
     size_t realsize = size * nmemb;
     plcCurlBuffer *mem = (plcCurlBuffer*)userp;
 
@@ -75,7 +75,7 @@ static size_t plcCurlCallback(void *contents, size_t size, size_t nmemb, void *u
     mem->size += realsize;
     mem->data[mem->size] = 0;
 
-    elog(WARNING, "hackday callback 2 : %d,  %s\n", mem->size, mem->data);
+    //elog(WARNING, "hackday callback 2 : %d,  %s\n", mem->size, mem->data);
     return realsize;
 }
 
@@ -98,7 +98,7 @@ static plcCurlBuffer *plcCurlRESTAPICallGarden(plcCurlCallType cType,
         struct curl_slist *headers = NULL; // init to NULL is important
 
         char *msg = NULL;
-	elog(WARNING,"hackurl%s",body);
+	//elog(WARNING,"hackurl%s",body);
         //char *output = curl_easy_escape(curl, body, strlen(body));
 	//output = body;
 	
@@ -135,7 +135,7 @@ static plcCurlBuffer *plcCurlRESTAPICallGarden(plcCurlCallType cType,
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, plcCurlCallback);
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void*)buffer);
 
-        elog(WARNING,"hack %s", msg);
+        //elog(WARNING,"hack %s", msg);
         /* Calling the API */
         res = curl_easy_perform(curl);
         if (res != CURLE_OK) {
@@ -201,7 +201,7 @@ int plc_garden_start_container(int sockfd UNUSED, plcContainer *cont, char **nam
     response = plcCurlRESTAPICallGarden(PLC_CALL_HTTPGET, messageBody, 200, false);
     res = response->status;
 
-    elog(WARNING, "hackday start: %s\n", response->data);
+    //elog(WARNING, "hackday start: %s\n", response->data);
     /* Free up intermediate data */
     pfree(messageBody);
 
@@ -241,7 +241,7 @@ int plc_garden_run_container(int sockfd UNUSED, char *name, int *port) {
     char *opt = "query=runTname=";
     char *messageBody = NULL;
     int res = 0;
-    elog(WARNING,"name:%s%d",name,strlen(name));
+    //elog(WARNING,"name:%s%d",name,strlen(name));
     name[strlen(name)-1] = '\0';
     char* name3 =  "test5";
     char* name2= palloc(strlen(name)+ 40);
@@ -263,9 +263,9 @@ int plc_garden_run_container(int sockfd UNUSED, char *name, int *port) {
 
     //get container port here.
 	if (res == 0) {
-		elog(WARNING, "hackday run: %s\n", response->data);
+		//elog(WARNING, "hackday run: %s\n", response->data);
 		*port = atoi(response->data);
-                elog(WARNING, "hackday run: %d\n", *port);
+                //elog(WARNING, "hackday run: %d\n", *port);
 	}
 
     pfree(messageBody);
