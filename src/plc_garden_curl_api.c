@@ -142,7 +142,7 @@ static plcCurlBuffer *plcCurlRESTAPICall(plcCurlCallType cType,
             curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &http_code);
             if (http_code == expectedReturn) {
                 if (!silent) {
-                    elog(DEBUG1, "Call '%s' succeeded\n", fullurl);
+                    elog(DEBUG1, "Call '%s' succeeded\n", msg);
                     elog(DEBUG1, "Returned data: %s\n", buffer->data);
                 }
                 buffer->status = 0;
@@ -210,12 +210,12 @@ int plc_garden_start_container(int sockfd UNUSED, plcContainer *cont, char **nam
 
 int plc_garden_stop_container(int sockfd UNUSED, char *name) {
     plcCurlBuffer *response = NULL;
-    char *opt = "query=stop&name=%s";
+    char *opt = "query=stop&name=";
     char *messageBody = NULL;
     int res = 0;
 
     messageBody = palloc(strlen(opt) + strlen(name) + 2);
-    sprintf(messageBody, opt, name);
+    sprintf(messageBody, "%s%s", opt, name);
 
     response = plcCurlRESTAPICall(PLC_CALL_HTTPGET, messageBody, 204, false);
     res = response->status;
@@ -228,12 +228,12 @@ int plc_garden_stop_container(int sockfd UNUSED, char *name) {
 
 int plc_garden_run_container(int sockfd UNUSED, char *name, int *port) {
     plcCurlBuffer *response = NULL;
-    char *opt = "query=run&name=%s";
+    char *opt = "query=run&name=";
     char *messageBody = NULL;
     int res = 0;
 
     messageBody = palloc(strlen(opt) + strlen(name) + 2);
-    sprintf(messageBody, opt, name);
+    sprintf(messageBody,"%s%s", opt, name);
 
     response = plcCurlRESTAPICall(PLC_CALL_HTTPGET, messageBody, 204, false);
     res = response->status;
