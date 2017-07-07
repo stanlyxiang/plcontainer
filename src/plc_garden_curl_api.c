@@ -220,7 +220,7 @@ int plc_garden_start_container(int sockfd UNUSED, plcContainer *cont, char **nam
 
 int plc_garden_stop_container(int sockfd UNUSED, char *name) {
     plcCurlBuffer *response = NULL;
-    char *opt = "query=stop%26name=";
+    char *opt = "query=stopTname=";
     char *messageBody = NULL;
     int res = 0;
 
@@ -238,9 +238,12 @@ int plc_garden_stop_container(int sockfd UNUSED, char *name) {
 
 int plc_garden_run_container(int sockfd UNUSED, char *name, int *port) {
     plcCurlBuffer *response = NULL;
-    char *opt = "query=run%26name=";
+    char *opt = "query=runTname=";
     char *messageBody = NULL;
     int res = 0;
+    elog(WARNING,"name:%s%d",name,strlen(name));
+    name[strlen(name)-1] = '\0';
+    char* name3 =  "test5";
     char* name2= palloc(strlen(name)+ 40);
     int i=0,j=0;
     for(i =0;i<strlen(name);i++){
