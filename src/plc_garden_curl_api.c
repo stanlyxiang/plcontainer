@@ -97,7 +97,7 @@ static plcCurlBuffer *plcCurlRESTAPICallGarden(plcCurlCallType cType,
         char *msg = NULL;
         msg = palloc(strlen(body)+strlen(plc_garden_url)+10);
 
-        char *output = curl_easy_escape(curl, msg, strlen(body)+1);
+        char *output = curl_easy_escape(curl, body, strlen(body)+1);
         sprintf(msg, "%s/?%s", plc_garden_url, output);
         /* Setting up request URL */
 
