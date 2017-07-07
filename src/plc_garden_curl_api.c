@@ -31,7 +31,6 @@ static plcCurlBuffer *plcCurlBufferInit();
 static void plcCurlBufferFree(plcCurlBuffer *buf);
 static size_t plcCurlCallback(void *contents, size_t size, size_t nmemb, void *userp);
 static plcCurlBuffer *plcCurlRESTAPICallGarden(plcCurlCallType cType,
-                                         char *url,
                                          char *body,
                                          long expectedReturn,
                                          bool silent);
