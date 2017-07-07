@@ -126,7 +126,7 @@ static plcCurlBuffer *plcCurlRESTAPICallGarden(plcCurlCallType cType,
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, plcCurlCallback);
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void*)buffer);
 
-        elog(WARNING,"hack%s",msg )
+        elog(WARNING,"hack%s",msg );
         /* Calling the API */
         res = curl_easy_perform(curl);
         if (res != CURLE_OK) {
