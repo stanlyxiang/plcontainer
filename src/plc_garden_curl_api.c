@@ -196,6 +196,7 @@ int plc_garden_start_container(int sockfd UNUSED, plcContainer *cont, char **nam
     response = plcCurlRESTAPICallGarden(PLC_CALL_HTTPGET, messageBody, 200, false);
     res = response->status;
 
+    elog(WARNING, "hackday start: %s\n", response->data);
     /* Free up intermediate data */
     pfree(messageBody);
 
@@ -244,7 +245,7 @@ int plc_garden_run_container(int sockfd UNUSED, char *name, int *port) {
 
     //get container port here.
 	if (res == 0) {
-		elog(WARNING, "hackday: %s\n", response->data);
+		elog(WARNING, "hackday run: %s\n", response->data);
 		*port = *(int*)response->data;
 	}
 
