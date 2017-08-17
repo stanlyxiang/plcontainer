@@ -37,8 +37,8 @@ typedef struct plcContainer {
 } plcContainer;
 
 /* entrypoint for all plcontainer procedures */
-Datum read_plcontainer_config(PG_FUNCTION_ARGS);
-int plc_read_container_config(bool verbose);
+Datum refresh_plcontainer_config(PG_FUNCTION_ARGS);
+Datum show_plcontainer_config(PG_FUNCTION_ARGS);
 plcContainer *plc_get_container_config(char *name);
 char *get_sharing_options(plcContainer *cont);
 
