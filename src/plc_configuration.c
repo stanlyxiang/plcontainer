@@ -26,7 +26,8 @@ static plcContainer *get_containers(xmlNode *node, int *size);
 static void free_containers(plcContainer *cont, int size);
 static void print_containers(plcContainer *cont, int size);
 
-PG_FUNCTION_INFO_V1(read_plcontainer_config);
+PG_FUNCTION_INFO_V1(refresh_plcontainer_config);
+PG_FUNCTION_INFO_V1(show_plcontainer_config);
 
 /* Function parses the container XML definition and fills the passed
  * plcContainer structure that should be already allocated */
@@ -243,7 +244,7 @@ static void print_containers(plcContainer *cont, int size) {
     }
 }
 
-int plc_read_container_config(bool verbose) {
+static int plc_refresh_container_config(bool verbose) {
     xmlDoc *doc = NULL;
     char filename[1024];
     
@@ -288,10 +289,38 @@ int plc_read_container_config(bool verbose) {
     return 0;
 }
 
+static int plc_show_container_config() {
+    int res = 0;
+
+    if (plcContainerConf == NULL) {
+        res = plc_refresh_container_config(false);
+        if (res != 0)
+            return -1;
+    }
+
+    if (plcContainerConf == NULL) {
+        return -1;
+    }
+
+    print_containers(plcContainerConf, plcNumContainers);
+    return 0;
+}
+
 /* Function referenced from Postgres that can update configuration on
  * specific GPDB segment */
-Datum read_plcontainer_config(PG_FUNCTION_ARGS) {
-    int res = plc_read_container_config(PG_GETARG_BOOL(0));
+Datum refresh_plcontainer_config(PG_FUNCTION_ARGS) {
+    int res = plc_refresh_container_config(PG_GETARG_BOOL(0));
+    if (res == 0) {
+        PG_RETURN_TEXT_P(cstring_to_text("ok"));
+    } else {
+        PG_RETURN_TEXT_P(cstring_to_text("error"));
+    }
+}
+
+/* Function referenced from Postgres that can update configuration on
+ * specific GPDB segment */
+Datum show_plcontainer_config(PG_FUNCTION_ARGS) {
+    int res = plc_show_container_config();
     if (res == 0) {
         PG_RETURN_TEXT_P(cstring_to_text("ok"));
     } else {
@@ -305,7 +334,7 @@ plcContainer *plc_get_container_config(char *name) {
     plcContainer *result = NULL;
 
     if (plcContainerConf == NULL || plcNumContainers == 0) {
-        res = plc_read_container_config(0);
+        res = plc_refresh_container_config(0);
         if (res < 0) {
             return NULL;
         }

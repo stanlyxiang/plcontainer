@@ -309,7 +309,7 @@ def main():
                     new_config = True
 
         if new_config:
-            logger.info('Configuration has changed. Run "select * from plcontainer_read_config()" in open sessions.' +
+            logger.info('Configuration has changed. Run "select * from plcontainer_refresh_config" in open sessions.' +
                         ' New sessions will get new configuration automatically')
 
     except Exception, e:
