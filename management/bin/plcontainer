@@ -150,9 +150,6 @@ def main():
     if not GPHOME:
         raise Exception('$GPHOME environment variable is not set')
 
-    print options
-    print ARGS
-
     if ARGS[0] == 'image':
         install_images(options, ARGS)
 
