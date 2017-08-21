@@ -11,6 +11,7 @@ include release.mk
 
 # Directories
 SRCDIR = ./src
+COMMONDIR = ./src/common
 MGMTDIR = ./management
 PYCLIENTDIR = src/pyclient/bin
 RCLIENTDIR = src/rclient/bin
@@ -61,7 +62,9 @@ endif
 
 all: all-lib
 
-install: all clients installdirs install-lib install-extra install-clients
+install: installdirs install-lib install-extra install-clients
+
+clean: clean-clients
 
 installdirs: installdirs-lib
 	$(MKDIR_P) '$(DESTDIR)$(bindir)'
@@ -95,3 +98,18 @@ installcheck:
 clients:
 	$(MAKE) -C $(SRCDIR)/pyclient
 	$(MAKE) -C $(SRCDIR)/rclient
+	touch $(COMMONDIR)/clients_timestamp
+
+all-lib: check-clients-make
+	@echo "Build PL/Container Done."
+
+.PHONY: check-clients-make
+check-clients-make:
+	if [ -f $(COMMONDIR)/clients_timestamp ]; then \
+	    rm $(COMMONDIR)/clients_timestamp && $(MAKE) clean ; \
+	fi
+
+.PHONY: clean-clients
+clean-clients:
+	$(MAKE) -C $(SRCDIR)/pyclient clean
+	$(MAKE) -C $(SRCDIR)/rclient clean
