@@ -18,20 +18,20 @@
 #include "plcontainer.h"
 #include "plc_configuration.h"
 
-static plcContainer *plcContainerConf = NULL;
+static plcContainerConf *plcContConf = NULL;
 static int plcNumContainers = 0;
 
-static int parse_container(xmlNode *node, plcContainer *cont);
-static plcContainer *get_containers(xmlNode *node, int *size);
-static void free_containers(plcContainer *cont, int size);
-static void print_containers(plcContainer *cont, int size);
+static int parse_container(xmlNode *node, plcContainerConf *cont);
+static plcContainerConf *get_containers(xmlNode *node, int *size);
+static void free_containers(plcContainerConf *cont, int size);
+static void print_containers(plcContainerConf *cont, int size);
 
 PG_FUNCTION_INFO_V1(refresh_plcontainer_config);
 PG_FUNCTION_INFO_V1(show_plcontainer_config);
 
 /* Function parses the container XML definition and fills the passed
- * plcContainer structure that should be already allocated */
-static int parse_container(xmlNode *node, plcContainer *cont) {
+ * plcContainerConf structure that should be already allocated */
+static int parse_container(xmlNode *node, plcContainerConf *cont) {
     xmlNode *cur_node = NULL;
     xmlChar *value = NULL;
     int has_name = 0;
@@ -161,14 +161,14 @@ static int parse_container(xmlNode *node, plcContainer *cont) {
     return 0;
 }
 
-/* Function returns an array of plcContainer structures based on the contents
+/* Function returns an array of plcContainerConf structures based on the contents
  * of passed XML document tree. Returns NULL on failure */
-static plcContainer *get_containers(xmlNode *node, int *size) {
+static plcContainerConf *get_containers(xmlNode *node, int *size) {
     xmlNode *cur_node = NULL;
     int nContainers = 0;
     int i = 0;
     int res = 0;
-    plcContainer* result = NULL;
+    plcContainerConf* result = NULL;
 
     /* Validation that the root node matches the expected specification */
     if (xmlStrcmp(node->name, (const xmlChar *)"configuration") != 0) {
@@ -191,9 +191,9 @@ static plcContainer *get_containers(xmlNode *node, int *size) {
         return result;
     }
 
-    result = plc_top_alloc(nContainers * sizeof(plcContainer));
+    result = plc_top_alloc(nContainers * sizeof(plcContainerConf));
 
-    /* Iterating through the list of containers to parse them into plcContainer */
+    /* Iterating through the list of containers to parse them into plcContainerConf */
     i = 0;
     res = 0;
     for (cur_node = node->children; cur_node; cur_node = cur_node->next) {
@@ -215,7 +215,7 @@ static plcContainer *get_containers(xmlNode *node, int *size) {
 }
 
 /* Safe way to deallocate container configuration list structure */
-static void free_containers(plcContainer *cont, int size) {
+static void free_containers(plcContainerConf *cont, int size) {
     int i;
     for (i = 0; i < size; i++) {
         if (cont[i].nSharedDirs > 0 && cont[i].sharedDirs != NULL) {
@@ -225,7 +225,7 @@ static void free_containers(plcContainer *cont, int size) {
     pfree(cont);
 }
 
-static void print_containers(plcContainer *cont, int size) {
+static void print_containers(plcContainerConf *cont, int size) {
     int i, j;
     for (i = 0; i < size; i++) {
         elog(INFO, "Container '%s' configuration", cont[i].name);
@@ -264,13 +264,13 @@ static int plc_refresh_container_config(bool verbose) {
     }
 
     /* Read the configuration */
-    if (plcContainerConf != NULL) {
-        free_containers(plcContainerConf, plcNumContainers);
-        plcContainerConf = NULL;
+    if (plcContConf != NULL) {
+        free_containers(plcContConf, plcNumContainers);
+        plcContConf = NULL;
         plcNumContainers = 0;
     }
 
-    plcContainerConf = get_containers(xmlDocGetRootElement(doc), &plcNumContainers);
+    plcContConf = get_containers(xmlDocGetRootElement(doc), &plcNumContainers);
 
     /* Free the document */
     xmlFreeDoc(doc);
@@ -278,12 +278,12 @@ static int plc_refresh_container_config(bool verbose) {
     /* Free the global variables that may have been allocated by the parser */
     xmlCleanupParser();
 
-    if (plcContainerConf == NULL) {
+    if (plcContConf == NULL) {
         return -1;
     }
 
     if (verbose) {
-        print_containers(plcContainerConf, plcNumContainers);
+        print_containers(plcContConf, plcNumContainers);
     }
 
     return 0;
@@ -292,17 +292,17 @@ static int plc_refresh_container_config(bool verbose) {
 static int plc_show_container_config() {
     int res = 0;
 
-    if (plcContainerConf == NULL) {
+    if (plcContConf == NULL) {
         res = plc_refresh_container_config(false);
         if (res != 0)
             return -1;
     }
 
-    if (plcContainerConf == NULL) {
+    if (plcContConf == NULL) {
         return -1;
     }
 
-    print_containers(plcContainerConf, plcNumContainers);
+    print_containers(plcContConf, plcNumContainers);
     return 0;
 }
 
@@ -328,12 +328,12 @@ Datum show_plcontainer_config(pg_attribute_unused() PG_FUNCTION_ARGS) {
     }
 }
 
-plcContainer *plc_get_container_config(char *name) {
+plcContainerConf *plc_get_container_config(char *name) {
     int res = 0;
     int i = 0;
-    plcContainer *result = NULL;
+    plcContainerConf *result = NULL;
 
-    if (plcContainerConf == NULL || plcNumContainers == 0) {
+    if (plcContConf == NULL || plcNumContainers == 0) {
         res = plc_refresh_container_config(0);
         if (res < 0) {
             return NULL;
@@ -341,8 +341,8 @@ plcContainer *plc_get_container_config(char *name) {
     }
 
     for (i = 0; i < plcNumContainers; i++) {
-        if (strcmp(name, plcContainerConf[i].name) == 0) {
-            result = &plcContainerConf[i];
+        if (strcmp(name, plcContConf[i].name) == 0) {
+            result = &plcContConf[i];
             break;
         }
     }
@@ -350,7 +350,7 @@ plcContainer *plc_get_container_config(char *name) {
     return result;
 }
 
-char *get_sharing_options(plcContainer *cont) {
+char *get_sharing_options(plcContainerConf *cont) {
     char *res = NULL;
 
     if (cont->nSharedDirs > 0) {

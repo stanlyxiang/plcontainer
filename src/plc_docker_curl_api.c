@@ -306,7 +306,7 @@ int plc_docker_connect() {
     return 8080;
 }
 
-int plc_docker_create_container(pg_attribute_unused() int sockfd, plcContainer *cont, char **name) {
+int plc_docker_create_container(pg_attribute_unused() int sockfd, plcContainerConf *cont, char **name) {
     char *createRequest =
             "{\n"
             "    \"AttachStdin\": false,\n"

@@ -27,7 +27,7 @@ typedef struct {
 
 #ifdef CURL_DOCKER_API
     int plc_docker_connect(void);
-    int plc_docker_create_container(int sockfd, plcContainer *cont, char **name);
+    int plc_docker_create_container(int sockfd, plcContainerConf *cont, char **name);
     int plc_docker_start_container(int sockfd, char *name);
     int plc_docker_kill_container(int sockfd, char *name);
     int plc_docker_inspect_container(int sockfd, char *name, int *port);
