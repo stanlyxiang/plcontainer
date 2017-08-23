@@ -1,7 +1,6 @@
 /*------------------------------------------------------------------------------
  *
- *
- * Copyright (c) 2016, Pivotal.
+ * Copyright (c) 2017-Present Pivotal Software, Inc
  *
  *------------------------------------------------------------------------------
  */
@@ -306,7 +305,7 @@ int plc_docker_connect() {
     return 8080;
 }
 
-int plc_docker_create_container(pg_attribute_unused() int sockfd, plcContainer *cont, char **name) {
+int plc_docker_create_container(pg_attribute_unused() int sockfd, plcContainerConf *conf, char **name) {
     char *createRequest =
             "{\n"
             "    \"AttachStdin\": false,\n"
@@ -322,20 +321,20 @@ int plc_docker_create_container(pg_attribute_unused() int sockfd, plcContainer *
             "        \"PublishAllPorts\": true\n"
             "    }\n"
             "}\n";
-    char *volumeShare = get_sharing_options(cont);
+    char *volumeShare = get_sharing_options(conf);
     char *messageBody = NULL;
     plcCurlBuffer *response = NULL;
     int res = 0;
 
     /* Get Docket API "create" call JSON message body */
-    messageBody = palloc(40 + strlen(createRequest) + strlen(cont->command)
-                            + strlen(cont->dockerid) + strlen(volumeShare));
+    messageBody = palloc(40 + strlen(createRequest) + strlen(conf->command)
+                            + strlen(conf->dockerid) + strlen(volumeShare));
     sprintf(messageBody,
             createRequest,
-            cont->command,
-            cont->dockerid,
+            conf->command,
+            conf->dockerid,
             volumeShare,
-            ((long long)cont->memoryMb) * 1024 * 1024);
+            ((long long)conf->memoryMb) * 1024 * 1024);
 
     /* Make a call */
     response = plcCurlRESTAPICall(PLC_CALL_POST, "/containers/create", messageBody, 201, false);
