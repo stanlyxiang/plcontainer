@@ -1,7 +1,6 @@
 /*------------------------------------------------------------------------------
  *
- *
- * Copyright (c) 2016, Pivotal.
+ * Copyright (c) 2017-Present Pivotal Software, Inc
  *
  *------------------------------------------------------------------------------
  */
@@ -20,7 +19,7 @@
 /* currently the declaration format for the container in function is:
  * #container:name
  */
-#define DECLARATION_MIN_LENGTH (signed)(strlen("#container:")+1)
+#define DECLARATION_MIN_LENGTH (signed)(strlen("#container:") + 1)
 
 /* given source code of the function, extract the container name */
 char *parse_container_meta(const char *source);
@@ -29,7 +28,7 @@ char *parse_container_meta(const char *source);
 plcConn *find_container(const char *image);
 
 /* start a new docker container using the given image  */
-plcConn *start_container(plcContainerConf *cont);
+plcConn *start_container(plcContainerConf *conf);
 
 /* Function terminates all the container connections */
 void stop_containers(void);

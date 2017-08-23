@@ -1,7 +1,6 @@
 /*------------------------------------------------------------------------------
  *
- *
- * Copyright (c) 2016, Pivotal.
+ * Copyright (c) 2017-Present Pivotal Software, Inc
  *
  *------------------------------------------------------------------------------
  */
@@ -40,6 +39,6 @@ typedef struct plcContainerConf {
 Datum refresh_plcontainer_config(PG_FUNCTION_ARGS);
 Datum show_plcontainer_config(PG_FUNCTION_ARGS);
 plcContainerConf *plc_get_container_config(char *name);
-char *get_sharing_options(plcContainerConf *cont);
+char *get_sharing_options(plcContainerConf *conf);
 
 #endif /* PLC_CONFIGURATION_H */

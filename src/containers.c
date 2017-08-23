@@ -1,7 +1,6 @@
 /*------------------------------------------------------------------------------
  *
- *
- * Copyright (c) 2016, Pivotal.
+ * Copyright (c) 2017-Present Pivotal Software, Inc
  *
  *------------------------------------------------------------------------------
  */
@@ -147,7 +146,7 @@ plcConn *find_container(const char *image) {
     return NULL;
 }
 
-plcConn *start_container(plcContainerConf *cont) {
+plcConn *start_container(plcContainerConf *conf) {
     int port;
     unsigned int sleepus = 25000;
     unsigned int sleepms = 0;
@@ -170,7 +169,7 @@ plcConn *start_container(plcContainerConf *cont) {
         return conn;
     }
 
-    res = plc_docker_create_container(sockfd, cont, &dockerid);
+    res = plc_docker_create_container(sockfd, conf, &dockerid);
     if (res < 0) {
         elog(ERROR, "Cannot create Docker container");
         return conn;
@@ -233,7 +232,7 @@ plcConn *start_container(plcContainerConf *cont) {
                     CONTAINER_CONNECT_TIMEOUT_MS);
         conn = NULL;
     } else {
-        insert_container(cont->name, dockerid, conn);
+        insert_container(conf->name, dockerid, conn);
     }
 
     pfree(dockerid);
@@ -283,7 +282,6 @@ static inline bool is_whitespace (const char c) {
 char *parse_container_meta(const char *source) {
     int first, last, len;
     char *name = NULL;
-    int nameptr = 0;
 
     first = 0;
     len = strlen(source);
@@ -299,7 +297,7 @@ char *parse_container_meta(const char *source) {
 
     /* If the string is too small or not starting with hash - no declaration */
     if (last - first < DECLARATION_MIN_LENGTH || source[first] != '#') {
-        lprintf(ERROR, "Container declaration should start with '#container:'");
+        lprintf(ERROR, "Container declaration format should be '#container:container_name'");
         return name;
     }
 
@@ -310,7 +308,7 @@ char *parse_container_meta(const char *source) {
 
     /* Line should be "# container :", fail if not so */
     if (strncmp(&source[first], "container", strlen("container")) != 0) {
-        lprintf(ERROR, "Container declaration should start with '#container:'");
+        lprintf(ERROR, "Container declaration format should be '#container:container_name'");
         return name;
     }
 
@@ -321,7 +319,7 @@ char *parse_container_meta(const char *source) {
 
     /* If no colon found - bad declaration */
     if (first >= last) {
-        lprintf(ERROR, "Container declaration should start with '#container:'");
+        lprintf(ERROR, "Container declaration format should be '#container:container_name'");
         return name;
     }
 
@@ -331,25 +329,20 @@ char *parse_container_meta(const char *source) {
     /* Ignore whitespace in the end of the line */
     while (last > first && is_whitespace(source[last]))
         last--;
+    /* when first meets last, the name is blankspace or only one char*/
+    if (first == last && is_whitespace(source[first])){
+        lprintf(ERROR, "Container name cannot be empty");
+        return NULL;
+    }
     /*
      * Allocate container name variable and copy container name
      * the character length of name is last-first+1
      * +1 for terminator
      */
-    name = (char*)pmalloc(last-first+1 + 1);
-    while (first <= last ){
-        name[nameptr] = source[first];
-        nameptr++;
-        first++;
-    }
+    name = (char*)pmalloc(last - first + 1 + 1);
+    memcpy(name, &source[first], last - first + 1);
 
-    /* Name cannot be empty */
-    if (nameptr == 0) {
-        lprintf(ERROR, "Container name cannot be empty");
-        pfree(name);
-        return NULL;
-    }
-    name[nameptr] = '\0';
+    name[last - first + 1] = '\0';
 
     int regt = check_container_name(name);
     if (regt == -1) {
@@ -359,6 +352,10 @@ char *parse_container_meta(const char *source) {
     return name;
 }
 
+/*
+ * check whether container name specified in function declaration
+ * satisfy the regex which follow docker container/image naming conventions.
+ */
 static int check_container_name(const char *name){
     int    status;
     regex_t    re;
@@ -370,5 +367,5 @@ static int check_container_name(const char *name){
     if (status != 0) {
         return -1;
     }
-    return 1;
+    return 0;
 }
