@@ -21,7 +21,8 @@ REGRESS_PYTHON = plcontainer_function_python plcontainer_function_python_gpdb5 \
 				 plcontainer_test_anaconda \
 
 # Regression Tests for GPDB5
-REGRESS_GPDB5 = plcontainer_install plcontainer_schema $(REGRESS_PYTHON) $(REGRESS_R)
+REGRESS_GPDB5_OLD = plcontainer_install plcontainer_schema $(REGRESS_PYTHON) $(REGRESS_R)
+REGRESS_GPDB5 = plcontainer_install plcontainer_schema plcontainer_function_python plcontainer_function_python_gpdb5 plcontainer_function_r plcontainer_function_r_gpdb5
 
 PSQLDIR = $(bindir)
 
