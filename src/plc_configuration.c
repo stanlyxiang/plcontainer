@@ -363,7 +363,7 @@ char *get_sharing_options(plcContainerConf *conf) {
         for (i = 0; i < conf->nSharedDirs; i++) {
             volumes[i] = palloc(10 + strlen(conf->sharedDirs[i].host) +
                                  strlen(conf->sharedDirs[i].container));
-            if (i > 0 && comma == ' '){
+            if (i > 0) {
                 comma = ',';
             }
             if (conf->sharedDirs[i].mode == PLC_ACCESS_READONLY) {
