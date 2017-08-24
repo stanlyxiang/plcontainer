@@ -357,16 +357,20 @@ char *get_sharing_options(plcContainerConf *conf) {
         int totallen = 0;
         char *pos;
         int i;
+        char comma = ' ';
 
         volumes = palloc(conf->nSharedDirs * sizeof(char*));
         for (i = 0; i < conf->nSharedDirs; i++) {
             volumes[i] = palloc(10 + strlen(conf->sharedDirs[i].host) +
                                  strlen(conf->sharedDirs[i].container));
+            if (i > 0) {
+                comma = ',';
+            }
             if (conf->sharedDirs[i].mode == PLC_ACCESS_READONLY) {
-                sprintf(volumes[i], "\"%s:%s:ro\"", conf->sharedDirs[i].host,
+                sprintf(volumes[i], " %c\"%s:%s:ro\"", comma, conf->sharedDirs[i].host,
                         conf->sharedDirs[i].container);
             } else if (conf->sharedDirs[i].mode == PLC_ACCESS_READWRITE) {
-                sprintf(volumes[i], "\"%s:%s:rw\"", conf->sharedDirs[i].host,
+                sprintf(volumes[i], " %c\"%s:%s:rw\"", comma, conf->sharedDirs[i].host,
                         conf->sharedDirs[i].container);
             } else {
                 elog(ERROR, "Cannot determine directory sharing mode");

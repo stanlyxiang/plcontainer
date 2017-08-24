@@ -1,7 +1,6 @@
 /*------------------------------------------------------------------------------
  *
- *
- * Copyright (c) 2016, Pivotal.
+ * Copyright (c) 2016-Present Pivotal Software, Inc
  *
  *------------------------------------------------------------------------------
  */
@@ -462,7 +461,7 @@ int plc_docker_connect() {
     return sockfd;
 }
 
-int plc_docker_create_container(int sockfd, plcContainer *cont, char **name) {
+int plc_docker_create_container(int sockfd, plcContainerConf *conf, char **name) {
     char *message      = NULL;
     char *message_body = NULL;
     char *apiendpoint  = NULL;
@@ -478,15 +477,15 @@ int plc_docker_create_container(int sockfd, plcContainer *cont, char **name) {
             plc_docker_api_version);
 
     /* Get Docket API "create" call JSON message body */
-    sharing = get_sharing_options(cont);
-    message_body = palloc(40 + strlen(plc_docker_create_request) + strlen(cont->command)
-                             + strlen(cont->dockerid) + strlen(sharing));
+    sharing = get_sharing_options(conf);
+    message_body = palloc(40 + strlen(plc_docker_create_request) + strlen(conf->command)
+                             + strlen(conf->dockerid) + strlen(sharing));
     sprintf(message_body,
             plc_docker_create_request,
-            cont->command,
-            cont->dockerid,
+            conf->command,
+            conf->dockerid,
             sharing,
-            ((long long)cont->memoryMb) * 1024 * 1024);
+            ((long long)conf->memoryMb) * 1024 * 1024);
 
     /* Fill in the HTTP message */
     message = palloc(40 + strlen(plc_docker_post_message_json) + strlen(apiendpoint)
