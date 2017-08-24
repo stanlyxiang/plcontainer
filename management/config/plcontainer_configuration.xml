@@ -1,3 +1,5 @@
+<?xml version="1.0"?>
+
 <configuration>
 
     <!--
@@ -19,53 +21,31 @@
     -->
     <container>
         <name>plc_python</name>
-        <container_id>pivotaldata/plcontainer_python:IMAGE_TAG</container_id>
+        <image>pivotaldata/plcontainer_python:IMAGE_TAG</image>
         <command>./client</command>
         <memory_mb>128</memory_mb>
     </container>
 
     <container>
         <name>plc_python3</name>
-        <container_id>pivotaldata/plcontainer_python3:IMAGE_TAG</container_id>
+        <image>pivotaldata/plcontainer_python3:IMAGE_TAG</image>
         <command>./client</command>
         <memory_mb>128</memory_mb>
     </container>
 
     <container>
-        <name>plc_anaconda</name>
-        <container_id>pivotaldata/plcontainer_anaconda:IMAGE_TAG</container_id>
-        <command>./client</command>
-        <memory_mb>256</memory_mb>
-    </container>
-
-    <container>
-        <name>plc_anaconda3</name>
-        <container_id>pivotaldata/plcontainer_anaconda3:IMAGE_TAG</container_id>
-        <command>./client</command>
-        <memory_mb>256</memory_mb>
-    </container>
-
-    <container>
         <name>plc_r</name>
-        <container_id>pivotaldata/plcontainer_r:IMAGE_TAG</container_id>
+        <image>pivotaldata/plcontainer_r:IMAGE_TAG</image>
         <command>./client</command>
         <memory_mb>256</memory_mb>
     </container>
 
     <container>
         <name>plc_python_shared</name>
-        <container_id>pivotaldata/plcontainer_python_shared:IMAGE_TAG</container_id>
+        <image>pivotaldata/plcontainer_python_shared:IMAGE_TAG</image>
         <command>/clientdir/client.sh</command>
         <memory_mb>128</memory_mb>
         <shared_directory host="/tmp/pyclient/bin" container="/clientdir" access="ro"/>
-    </container>
-
-    <container>
-        <name>plc_r_shared</name>
-        <container_id>pivotaldata/plcontainer_r_shared:IMAGE_TAG</container_id>
-        <command>./client.sh</command>
-        <memory_mb>256</memory_mb>
-        <shared_directory host="/usr/local" container="/usr/local" access="ro"/>
     </container>
 
 </configuration>
