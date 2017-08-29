@@ -8,7 +8,7 @@
         2. "name" - container name that can be referenced in database creating the
             function in PL/Container language. Might not match the container name
             in Docker. Mandatory field
-        3. "container_id" - container name in Docker, used for starting and stopping
+        3. "image" - container image in Docker, used for starting and stopping
             the containers. Mandatory field
         4. "command" - command used to start the client process inside of the
             container. Mandatory field
@@ -16,6 +16,9 @@
             container can usilize all the available OS memory
         6. "shared_directory" - a series of tags, each one defines a single
             directory shared between host and container. Optional
+        7. "use_network" - set to "yes" or "no" to specify whether use tcp or ipc
+            for communication between gpdb process and container process. Optional.
+            By default, we set "no".
         All the container names not manually defined in this file will not be
         available for use by endusers in PL/Container
     -->

@@ -1,6 +1,6 @@
 /*------------------------------------------------------------------------------
  *
- * Copyright (c) 2017-Present Pivotal Software, Inc
+ * Copyright (c) 2016-Present Pivotal Software, Inc
  *
  *------------------------------------------------------------------------------
  */
@@ -305,7 +305,7 @@ int plc_docker_connect() {
     return 8080;
 }
 
-int plc_docker_create_container(pg_attribute_unused() int sockfd, plcContainerConf *conf, char **name) {
+int plc_docker_create_container(pg_attribute_unused() int sockfd, plcContainerConf *conf, char **name, int container_id) {
     char *createRequest =
             "{\n"
             "    \"AttachStdin\": false,\n"
@@ -313,15 +313,16 @@ int plc_docker_create_container(pg_attribute_unused() int sockfd, plcContainerCo
             "    \"AttachStderr\": false,\n"
             "    \"Tty\": false,\n"
             "    \"Cmd\": [\"%s\"],\n"
+            "    \"Env\": [\"USE_NETWORK=%s\"],\n"
+            "    \"NetworkDisabled\": %s,\n"
             "    \"Image\": \"%s\",\n"
-            "    \"DisableNetwork\": false,\n"
             "    \"HostConfig\": {\n"
             "        \"Binds\": [%s],\n"
             "        \"Memory\": %lld,\n"
             "        \"PublishAllPorts\": true\n"
             "    }\n"
             "}\n";
-    char *volumeShare = get_sharing_options(conf);
+    char *volumeShare = get_sharing_options(conf, container_id);
     char *messageBody = NULL;
     plcCurlBuffer *response = NULL;
     int res = 0;
@@ -332,6 +333,8 @@ int plc_docker_create_container(pg_attribute_unused() int sockfd, plcContainerCo
     sprintf(messageBody,
             createRequest,
             conf->command,
+            conf->isNetworkConnection ? "true" : "false",
+            conf->isNetworkConnection ? "false" : "true",
             conf->dockerid,
             volumeShare,
             ((long long)conf->memoryMb) * 1024 * 1024);

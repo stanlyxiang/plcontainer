@@ -1,7 +1,7 @@
 /*------------------------------------------------------------------------------
  *
  *
- * Copyright (c) 2016, Pivotal.
+ * Copyright (c) 2016-Present Pivotal Software, Inc
  *
  *------------------------------------------------------------------------------
  */
@@ -10,6 +10,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
+#include <sys/un.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
 #include "comm_channel.h"
 #include "comm_utils.h"
@@ -17,16 +20,19 @@
 #include "comm_server.h"
 #include "messages/messages.h"
 
+/* For unix domain socket connection only. */
+static char *uds_client_fn;
+
 /*
- * Functoin binds the socket and starts listening on it
+ * Function binds the socket and starts listening on it: tcp
  */
-int start_listener() {
+static int start_listener_inet() {
     struct sockaddr_in addr;
     int                sock;
 
     sock = socket(AF_INET, SOCK_STREAM, 0);
     if (sock == -1) {
-        lprintf(ERROR, "%s", strerror(errno));
+        lprintf(ERROR, "system call socket() fails: %s", strerror(errno));
     }
 
     addr = (struct sockaddr_in){
@@ -47,11 +53,99 @@ int start_listener() {
         lprintf(ERROR, "Cannot listen the socket: %s", strerror(errno));
     }
 
+	lprintf(DEBUG1, "Listening via network with port: %d", SERVER_PORT);
+
     return sock;
 }
 
 /*
- * Fuction waits for the socket to accept connection for finite amount of time
+ * Function binds the socket and starts listening on it: unix domain socket.
+ */
+static int start_listener_ipc(char **puds_fn) {
+    struct sockaddr_un addr;
+    int                sock;
+	char              *uds_fn;
+	int                sz;
+
+	/* filename: IPC_CLIENT_DIR + '/' + UDS_SHARED_FILE */
+	sz = strlen(IPC_CLIENT_DIR) + 1 + MAX_SHARED_FILE_SZ + 1;
+	uds_fn = pmalloc(sz);
+	sprintf(uds_fn, "%s/%s", IPC_CLIENT_DIR, UDS_SHARED_FILE);
+	if (strlen(uds_fn) >= sizeof(addr.sun_path)) {
+		lprintf(ERROR, "PLContainer: The path for unix domain socket "
+				"connection is too long: %s", uds_fn);
+	}
+
+    sock = socket(AF_UNIX, SOCK_STREAM, 0);
+    if (sock == -1) {
+        lprintf(ERROR, "system call socket() fails: %s", strerror(errno));
+    }
+
+	memset(&addr, 0, sizeof(addr));
+	addr.sun_family = AF_UNIX;
+	strcpy(addr.sun_path, uds_fn);
+
+	unlink(uds_fn);
+	if (access(uds_fn, F_OK) == 0)
+		lprintf(ERROR, "Cannot delete the file for unix domain socket connection: %s", uds_fn);
+
+    if (bind(sock, (const struct sockaddr *)&addr, sizeof(addr)) == -1) {
+        lprintf(ERROR, "Cannot bind the addr: %s", strerror(errno));
+    }
+
+	/* So that QE can access this socket file.
+	 * FIXME: Is there solution or is it necessary to set less permission?
+	 * Dynamically create uid same as that in GPDB in container?
+	 */
+	chmod(uds_fn, S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH); /* 0666*/
+
+	/* Save it since we need to unlink the file when container process exits. */
+	if (puds_fn != NULL) {
+		unlink(*puds_fn);
+		pfree(*puds_fn);
+	}
+	*puds_fn = uds_fn;
+
+#ifdef _DEBUG_CLIENT
+    int enable = 1;
+    if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int)) < 0){
+        lprintf(ERROR, "setsockopt(SO_REUSEADDR) failed");
+    }
+#endif
+    if (listen(sock, 10) == -1) {
+        lprintf(ERROR, "Cannot listen the socket: %s", strerror(errno));
+    }
+
+	lprintf(DEBUG1, "Listening via unix domain socket with file: %s", uds_fn);
+
+    return sock;
+}
+
+static void atexit_cleanup_udsfile()
+{
+	if (uds_client_fn != NULL) {
+		unlink(uds_client_fn);
+		pfree(uds_client_fn);
+	}
+}
+
+int start_listener()
+{
+	int sock;
+
+	if (strcasecmp("true", getenv("USE_NETWORK")) == 0 ||
+		strcasecmp("yes", getenv("USE_NETWORK")) == 0) {
+		sock = start_listener_inet();
+	} else {
+		sock = start_listener_ipc(&uds_client_fn);
+		atexit(atexit_cleanup_udsfile);
+	}
+
+	return sock;
+}
+
+/*
+ * Function waits for the socket to accept connection for finite amount of time
  * and errors out when the timeout is reached and no client connected
  */
 void connection_wait(int sock) {

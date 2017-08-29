@@ -1,6 +1,6 @@
 /*------------------------------------------------------------------------------
  *
- * Copyright (c) 2017-Present Pivotal Software, Inc
+ * Copyright (c) 2016-Present Pivotal Software, Inc
  *
  *------------------------------------------------------------------------------
  */
@@ -8,12 +8,15 @@
 
 #include <libxml/tree.h>
 #include <libxml/parser.h>
+#include <unistd.h>
+#include <sys/stat.h>
 
 #include "postgres.h"
 #include "utils/builtins.h"
 #include "utils/guc.h"
 
 #include "common/comm_utils.h"
+#include "common/comm_connectivity.h"
 #include "plcontainer.h"
 #include "plc_configuration.h"
 
@@ -40,6 +43,7 @@ static int parse_container(xmlNode *node, plcContainerConf *conf) {
 
     /* First iteration - parse name, container_id and memory_mb and count the
      * number of shared directories for later allocation of related structure */
+	memset((void *) conf, 0, sizeof(plcContainerConf));
     conf->memoryMb = -1;
     for (cur_node = node->children; cur_node; cur_node = cur_node->next) {
         if (cur_node->type == XML_ELEMENT_NODE) {
@@ -71,6 +75,19 @@ static int parse_container(xmlNode *node, plcContainerConf *conf) {
                 processed = 1;
                 value = xmlNodeGetContent(cur_node);
                 conf->memoryMb = pg_atoi((char*)value, sizeof(int), 0);
+            }
+
+            if (xmlStrcmp(cur_node->name, (const xmlChar *)"use_network") == 0) {
+                processed = 1;
+                value = xmlNodeGetContent(cur_node);
+				if (strcasecmp((char *) value, "false") == 0 ||
+					strcasecmp((char *) value, "no") == 0)
+					conf->isNetworkConnection = false;
+				else if (strcasecmp((char *) value, "true") == 0 ||
+						 strcasecmp((char *) value, "yes") == 0)
+					conf->isNetworkConnection = true;
+				else
+					processed = 0;
             }
 
             if (xmlStrcmp(cur_node->name, (const xmlChar *)"shared_directory") == 0) {
@@ -230,6 +247,7 @@ static void print_containers(plcContainerConf *conf, int size) {
         elog(INFO, "Container '%s' configuration", conf[i].name);
         elog(INFO, "    container_id = '%s'", conf[i].dockerid);
         elog(INFO, "    memory_mb = '%d'", conf[i].memoryMb);
+        elog(INFO, "    use network = '%s'", conf[i].isNetworkConnection ? "yes" : "no");
         for (j = 0; j < conf[i].nSharedDirs; j++) {
             elog(INFO, "    shared directory from host '%s' to container '%s'",
                  conf[i].sharedDirs[j].host,
@@ -349,23 +367,22 @@ plcContainerConf *plc_get_container_config(char *name) {
     return result;
 }
 
-char *get_sharing_options(plcContainerConf *conf) {
+char *get_sharing_options(plcContainerConf *conf, int container_slot) {
     char *res = NULL;
 
-    if (conf->nSharedDirs > 0) {
+    if (conf->nSharedDirs >= 0) {
         char **volumes = NULL;
         int totallen = 0;
         char *pos;
         int i;
         char comma = ' ';
 
-        volumes = palloc(conf->nSharedDirs * sizeof(char*));
+        volumes = palloc((conf->nSharedDirs + 1) * sizeof(char*));
         for (i = 0; i < conf->nSharedDirs; i++) {
             volumes[i] = palloc(10 + strlen(conf->sharedDirs[i].host) +
                                  strlen(conf->sharedDirs[i].container));
-            if (i > 0) {
+            if (i > 0)
                 comma = ',';
-            }
             if (conf->sharedDirs[i].mode == PLC_ACCESS_READONLY) {
                 sprintf(volumes[i], " %c\"%s:%s:ro\"", comma, conf->sharedDirs[i].host,
                         conf->sharedDirs[i].container);
@@ -378,20 +395,39 @@ char *get_sharing_options(plcContainerConf *conf) {
             totallen += strlen(volumes[i]);
         }
 
-        res = palloc(totallen + 2 * conf->nSharedDirs);
+		if (!conf->isNetworkConnection) {
+            if (i > 0)
+                comma = ',';
+			/* Directory for QE : IPC_GPDB_BASE_DIR + "." + PID + "." + container_slot */
+			int gpdb_dir_sz;
+			char *uds_dir;
+
+			gpdb_dir_sz = strlen(IPC_GPDB_BASE_DIR) + 1 + 16 + 1 + 4 + 1;
+			uds_dir = pmalloc(gpdb_dir_sz);
+			sprintf(uds_dir, "%s.%d.%d", IPC_GPDB_BASE_DIR, getpid(), container_slot);
+			volumes[i] = pmalloc(10 + gpdb_dir_sz + strlen(IPC_CLIENT_DIR));
+			sprintf(volumes[i], " %c\"%s:%s:rw\"", comma, uds_dir, IPC_CLIENT_DIR);
+            totallen += strlen(volumes[i]);
+
+			/* Create the directory. */
+			if (mkdir(uds_dir, S_IRWXU) < 0 && errno != EEXIST) {
+				elog(ERROR, "PLContainer: Cannot create directory %s: %s",
+						uds_dir, strerror(errno));
+			}
+		}
+
+        res = palloc(totallen + conf->nSharedDirs + 1 + 1);
         pos = res;
-        for (i = 0; i < conf->nSharedDirs; i++) {
+        for (i = 0; i < (conf->isNetworkConnection ? conf->nSharedDirs : conf->nSharedDirs + 1); i++) {
             memcpy(pos, volumes[i], strlen(volumes[i]));
             pos += strlen(volumes[i]);
             *pos = ' ';
-            pos += 1;
+            pos++;
             pfree(volumes[i]);
         }
         *pos = '\0';
         pfree(volumes);
-    } else {
-        res = palloc(1);
-        res[0] = '\0';
     }
+
     return res;
 }

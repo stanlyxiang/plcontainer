@@ -1,7 +1,7 @@
 /*------------------------------------------------------------------------------
  *
  *
- * Copyright (c) 2016, Pivotal.
+ * Copyright (c) 2016-Present Pivotal Software, Inc
  *
  *------------------------------------------------------------------------------
  */
@@ -17,6 +17,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#include <sys/un.h>
+#include <sys/socket.h>
+#include <libgen.h>
 
 #include "comm_utils.h"
 #include "comm_connectivity.h"
@@ -316,7 +319,8 @@ int plcBufferFlush (plcConn *conn) {
 }
 
 /*
- *  Initialize plcConn data structure and input/output buffers
+ *  Initialize plcConn data structure and input/output buffers.
+ *  For network connection, uds_fn means nothing.
  */
 plcConn * plcConnInit(int sock) {
     plcConn *conn;
@@ -342,11 +346,13 @@ plcConn * plcConnInit(int sock) {
     return conn;
 }
 
+/* FIXME: Move out of src/common later. */
+#ifndef COMM_STANDALONE
 /*
  *  Connect to the specified host of the localhost and initialize the plcConn
  *  data structure
  */
-plcConn *plcConnect(int port) {
+plcConn *plcConnect_inet(int port) {
     struct hostent     *server;
     struct sockaddr_in  raddr; /** Remote address */
     plcConn            *result = NULL;
@@ -370,14 +376,60 @@ plcConn *plcConnect(int port) {
 
     raddr.sin_port = htons(port);
     if (connect(sock, (const struct sockaddr *)&raddr,
-            sizeof(struct sockaddr_in)) < 0) {
+            sizeof(raddr)) < 0) {
         char ipAddr[INET_ADDRSTRLEN];
         inet_ntop(AF_INET, &(raddr.sin_addr), ipAddr, INET_ADDRSTRLEN);
         lprintf(DEBUG1, "PLContainer: Failed to connect to %s", ipAddr);
         return result;
     }
 
-    /* Set socker receive timeout to 500ms */
+	/* FIXME: Do we need them? */
+    /* Set socket receive timeout to 500ms */
+    tv.tv_sec  = 0;
+    tv.tv_usec = 500000;
+    setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, (char *)&tv, sizeof(struct timeval));
+
+    result = plcConnInit(sock);
+
+    return result;
+}
+
+/*
+ *  Connect to the specified host of the localhost and initialize the plcConn
+ *  data structure
+ */
+plcConn *plcConnect_ipc(char *uds_fn) {
+    plcConn            *result = NULL;
+    struct timeval      tv;
+	int                 sock;
+	struct sockaddr_un  raddr;
+
+	if (strlen(uds_fn) >= sizeof(raddr.sun_path)) {
+		lprintf(ERROR, "PLContainer: The path for unix domain socket "
+				"connection is too long: %s", uds_fn);
+		return NULL;
+	}
+
+	sock = socket(AF_UNIX, SOCK_STREAM, 0);
+	if (sock < 0) {
+		lprintf(ERROR, "PLContainer: Cannot create unix domain socket: %s",
+				strerror(errno));
+		return NULL;
+	}
+
+	memset(&raddr, 0, sizeof(raddr));
+
+	raddr.sun_family = AF_UNIX;
+	strcpy(raddr.sun_path, uds_fn);
+
+	if (connect(sock, (const struct sockaddr *)&raddr,
+			sizeof(raddr)) < 0) {
+		lprintf(DEBUG1, "PLContainer: Failed to connect to %s: %s",
+				uds_fn, strerror(errno));
+		return NULL;
+	}
+
+	/* Set socker receive timeout to 500ms */
     tv.tv_sec  = 0;
     tv.tv_usec = 500000;
     setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, (char *)&tv, sizeof(struct timeval));
@@ -401,3 +453,4 @@ void plcDisconnect(plcConn *conn) {
     }
     return;
 }
+#endif

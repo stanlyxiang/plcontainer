@@ -1,6 +1,6 @@
 /*------------------------------------------------------------------------------
  *
- * Copyright (c) 2017-Present Pivotal Software, Inc
+ * Copyright (c) 2016-Present Pivotal Software, Inc
  *
  *------------------------------------------------------------------------------
  */
@@ -11,12 +11,14 @@
 #include <string.h>
 #include <unistd.h>
 #include <time.h>
+#include <libgen.h>
 
 #include "postgres.h"
 #include "utils/ps_status.h"
 
 #include "common/comm_utils.h"
 #include "common/comm_channel.h"
+#include "common/comm_connectivity.h"
 #include "common/messages/messages.h"
 #include "plc_configuration.h"
 #include "containers.h"
@@ -44,7 +46,14 @@ static int check_container_name(const char *name);
 
 #ifndef CONTAINER_DEBUG
 
-static void cleanup(char *dockerid) {
+static void cleanup4uds(char *uds_fn) {
+	if (uds_fn != NULL) {
+		unlink(uds_fn);
+		rmdir(dirname(uds_fn));
+	}
+}
+
+static void cleanup(char *dockerid, char *uds_fn) {
     pid_t pid = 0;
 
     /* We fork the process to syncronously wait for container to exit */
@@ -98,32 +107,42 @@ static void cleanup(char *dockerid) {
         if (sockfd > 0) {
             res = plc_docker_delete_container(sockfd, dockerid);
             if (res < 0) {
+				cleanup4uds(uds_fn);
                 _exit(1);
             }
         }
         plc_docker_disconnect(sockfd);
 
+		cleanup4uds(uds_fn);
         _exit(0);
     }
 }
 
 #endif /* not CONTAINER_DEBUG */
 
-static void insert_container(char *image, char *dockerid, plcConn *conn) {
-    size_t i;
+static int find_container_slot() {
+	int i;
+
     for (i = 0; i < CONTAINER_NUMBER; i++) {
         if (containers[i].name == NULL) {
-            containers[i].name     = plc_top_strdup(image);
-            containers[i].conn     = conn;
-            containers[i].dockerid = NULL;
-            if (dockerid != NULL) {
-                containers[i].dockerid = plc_top_strdup(dockerid);
-            }
-            return;
+            return i;
         }
     }
     // Fatal would cause the session to be closed
     elog(FATAL, "Single session cannot handle more than %d open containers simultaneously", CONTAINER_NUMBER);
+
+}
+
+static void insert_container(char *image, char *dockerid, plcConn *conn) {
+	int slot = conn->container_slot;
+
+	containers[slot].name     = plc_top_strdup(image);
+	containers[slot].conn     = conn;
+	containers[slot].dockerid = NULL;
+	if (dockerid != NULL) {
+		containers[slot].dockerid = plc_top_strdup(dockerid);
+	}
+	return;
 }
 
 static void init_containers() {
@@ -146,6 +165,18 @@ plcConn *find_container(const char *image) {
     return NULL;
 }
 
+static char *get_uds_fn(int container_slot) {
+	char *uds_fn = NULL;
+	int   sz;
+
+	/* filename: IPC_GPDB_BASE_DIR + "." + PID + "." + container_slot / UDS_SHARED_FILE */
+	sz = strlen(IPC_GPDB_BASE_DIR) + 1 + 16 + 1 + 4 + 1 + MAX_SHARED_FILE_SZ + 1;
+	uds_fn = pmalloc(sz);
+	snprintf(uds_fn, sz, "%s.%d.%d/%s", IPC_GPDB_BASE_DIR, getpid(), container_slot, UDS_SHARED_FILE);
+
+	return uds_fn;
+}
+
 plcConn *start_container(plcContainerConf *conf) {
     int port;
     unsigned int sleepus = 25000;
@@ -153,15 +184,12 @@ plcConn *start_container(plcContainerConf *conf) {
     plcMsgPing *mping = NULL;
     plcConn *conn = NULL;
     char *dockerid = NULL;
+	char *uds_fn = NULL;
+	int   container_slot;
+    int   sockfd;
+    int   res = 0;
 
-#ifdef CONTAINER_DEBUG
-
-    port = 8080;
-
-#else
-
-    int sockfd;
-    int res = 0;
+	container_slot = find_container_slot();
 
     sockfd = plc_docker_connect();
     if (sockfd < 0) {
@@ -169,7 +197,7 @@ plcConn *start_container(plcContainerConf *conf) {
         return conn;
     }
 
-    res = plc_docker_create_container(sockfd, conf, &dockerid);
+    res = plc_docker_create_container(sockfd, conf, &dockerid, container_slot);
     if (res < 0) {
         elog(ERROR, "Cannot create Docker container");
         return conn;
@@ -181,11 +209,14 @@ plcConn *start_container(plcContainerConf *conf) {
         return conn;
     }
 
-    res = plc_docker_inspect_container(sockfd, dockerid, &port);
-    if (res < 0) {
-        elog(ERROR, "Cannot parse host port exposed by Docker container");
-        return conn;
-    }
+	/* For network connection only. */
+	if (conf->isNetworkConnection) {
+		res = plc_docker_inspect_container(sockfd, dockerid, &port);
+		if (res < 0) {
+			elog(ERROR, "Cannot parse host port exposed by Docker container");
+			return conn;
+		}
+	}
 
     res = plc_docker_disconnect(sockfd);
     if (res < 0) {
@@ -193,10 +224,11 @@ plcConn *start_container(plcContainerConf *conf) {
         return conn;
     }
 
-    /* Create a process to clean up the container after it finishes */
-    cleanup(dockerid);
+	if (!conf->isNetworkConnection)
+		uds_fn = get_uds_fn(container_slot);
 
-#endif // CONTAINER_DEBUG
+    /* Create a process to clean up the container after it finishes */
+    cleanup(dockerid, uds_fn);
 
     /* Making a series of connection attempts unless connection timeout of
      * CONTAINER_CONNECT_TIMEOUT_MS is reached. Exponential backoff for
@@ -208,8 +240,15 @@ plcConn *start_container(plcContainerConf *conf) {
         int         res = 0;
         plcMessage *mresp = NULL;
 
-        conn = plcConnect(port);
+		if (!conf->isNetworkConnection)
+			conn = plcConnect_ipc(uds_fn);
+		else
+			conn = plcConnect_inet(port);
+
         if (conn != NULL) {
+			elog(DEBUG1, "Connected to container via %s",
+				conf->isNetworkConnection ? "network" : "unix domain socket");
+			conn->container_slot = container_slot;
             res = plcontainer_channel_send(conn, (plcMessage*)mping);
             if (res == 0) {
                 res = plcontainer_channel_receive(conn, &mresp);
@@ -236,6 +275,8 @@ plcConn *start_container(plcContainerConf *conf) {
     }
 
     pfree(dockerid);
+	if (uds_fn != NULL)
+		pfree(uds_fn);
 
     return conn;
 }
@@ -272,6 +313,7 @@ void stop_containers() {
             }
         }
     }
+
     containers_init = 0;
 }
 
