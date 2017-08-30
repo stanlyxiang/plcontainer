@@ -72,13 +72,12 @@ installdirs: installdirs-lib
 
 .PHONY: uninstall
 uninstall: uninstall-lib
-	rm -f '$(DESTDIR)$(bindir)/plcontainer-config'
+	rm -f '$(DESTDIR)$(bindir)/plcontainer'
 	rm -rf '$(PLCONTAINERDIR)'
 
 .PHONY: install-extra
 install-extra:
 	# Management
-	$(INSTALL_PROGRAM) '$(MGMTDIR)/bin/plcontainer-config'               '$(DESTDIR)$(bindir)/plcontainer-config'
 	$(INSTALL_PROGRAM) '$(MGMTDIR)/bin/plcontainer'                      '$(DESTDIR)$(bindir)/plcontainer'
 	$(INSTALL_DATA)    '$(MGMTDIR)/config/plcontainer_configuration.xml' '$(PLCONTAINERDIR)'
 	$(INSTALL_DATA)    '$(MGMTDIR)/sql/plcontainer_install.sql'          '$(PLCONTAINERDIR)'
