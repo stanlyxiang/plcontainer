@@ -1,4 +1,4 @@
-/*------------------------------------------------------------------------------
+/*-----------------------------------------------------------------------------
  *
  * Copyright (c) 2016-Present Pivotal Software, Inc
  *
@@ -9,9 +9,9 @@
 
 #include "plc_docker_common.h"
 
-PLC_FunctionEntriesData CurrentPLCImp;
+static PLC_FunctionEntriesData CurrentPLCImp;
 
-void plc_prepareImplementation(enum PLC_BACKEND_TYPE imptype) {
+void plc_backend_prepareImplementation(enum PLC_BACKEND_TYPE imptype) {
     /* Initialize plc backend implement handlers. */
     CurrentPLCImp.connect = NULL;
     CurrentPLCImp.create = NULL;
@@ -23,42 +23,42 @@ void plc_prepareImplementation(enum PLC_BACKEND_TYPE imptype) {
     CurrentPLCImp.disconnect = NULL;
 
     switch (imptype) {
-        case DOCKER_CONTAINER:
+        case BACKEND_DOCKER:
             plc_docker_init(&CurrentPLCImp);
             break;
         default:
-            Assert(false);
+            elog(ERROR, "Unsupported plc backend type");
     }
 }
 
-int plc_connect(void){
+int plc_backend_connect(void){
     return CurrentPLCImp.connect != NULL ? CurrentPLCImp.connect() : FUNC_RETURN_OK;
 }
 
-int plc_create(int sockfd, plcContainerConf *conf, char **name, int container_slot){
+int plc_backend_create(int sockfd, plcContainerConf *conf, char **name, int container_slot){
     return CurrentPLCImp.create != NULL ? CurrentPLCImp.create(sockfd, conf, name, container_slot) : FUNC_RETURN_OK;
 }
 
-int plc_start(int sockfd, char *name){
+int plc_backend_start(int sockfd, char *name){
     return CurrentPLCImp.start != NULL ? CurrentPLCImp.start(sockfd, name) : FUNC_RETURN_OK;
 }
 
-int plc_kill(int sockfd, char *name){
+int plc_backend_kill(int sockfd, char *name){
     return CurrentPLCImp.kill != NULL ? CurrentPLCImp.kill(sockfd, name) : FUNC_RETURN_OK;
 }
 
-int plc_inspect(int sockfd, char *name, int *port){
+int plc_backend_inspect(int sockfd, char *name, int *port){
     return CurrentPLCImp.inspect != NULL ? CurrentPLCImp.inspect(sockfd, name, port) : FUNC_RETURN_OK;
 }
 
-int plc_wait(int sockfd, char *name){
+int plc_backend_wait(int sockfd, char *name){
     return CurrentPLCImp.wait != NULL ? CurrentPLCImp.wait(sockfd, name) : FUNC_RETURN_OK;
 }
 
-int plc_delete(int sockfd, char *name){
+int plc_backend_delete(int sockfd, char *name){
     return CurrentPLCImp.delete_backend != NULL ? CurrentPLCImp.delete_backend(sockfd, name) : FUNC_RETURN_OK;
 }
 
-int plc_disconnect(int sockfd){
+int plc_backend_disconnect(int sockfd){
     return CurrentPLCImp.disconnect != NULL ? CurrentPLCImp.disconnect(sockfd) : FUNC_RETURN_OK;
 }

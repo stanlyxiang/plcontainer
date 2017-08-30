@@ -38,20 +38,22 @@ typedef struct PLC_FunctionEntriesData  PLC_FunctionEntriesData;
 typedef struct PLC_FunctionEntriesData *PLC_FunctionEntries;
 
 enum PLC_BACKEND_TYPE {
-    DOCKER_CONTAINER = 0,
+    BACKEND_DOCKER = 0,
+    BACKEND_GARDEN,
+    BACKEND_PROCESS,
     UNIMPLEMENT_TYPE
 };
 
-void plc_prepareImplementation(enum PLC_BACKEND_TYPE imptype);
+void plc_backend_prepareImplementation(enum PLC_BACKEND_TYPE imptype);
 
 /* interface for plc backend*/
-int plc_connect(void);
-int plc_create(int sockfd, plcContainerConf *conf, char **name, int container_slot);
-int plc_start(int sockfd, char *name);
-int plc_kill(int sockfd, char *name);
-int plc_inspect(int sockfd, char *name, int *port);
-int plc_wait(int sockfd, char *name);
-int plc_delete(int sockfd, char *name);
-int plc_disconnect(int sockfd);
+int plc_backend_connect(void);
+int plc_backend_create(int sockfd, plcContainerConf *conf, char **name, int container_slot);
+int plc_backend_start(int sockfd, char *name);
+int plc_backend_kill(int sockfd, char *name);
+int plc_backend_inspect(int sockfd, char *name, int *port);
+int plc_backend_wait(int sockfd, char *name);
+int plc_backend_delete(int sockfd, char *name);
+int plc_backend_disconnect(int sockfd);
 
 #endif /* PLC_BACKEND_API_H */
