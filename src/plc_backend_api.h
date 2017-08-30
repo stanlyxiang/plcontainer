@@ -15,7 +15,7 @@
 #define FUNC_RETURN_OK 0
 
 typedef int ( * PLC_FPTR_connect)    (void);
-typedef int ( * PLC_FPTR_create)     (int sockfd, plcContainerConf *conf, char **name);
+typedef int ( * PLC_FPTR_create)     (int sockfd, plcContainerConf *conf, char **name, int container_slot);
 typedef int ( * PLC_FPTR_start)      (int sockfd, char *name);
 typedef int ( * PLC_FPTR_kill)       (int sockfd, char *name);
 typedef int ( * PLC_FPTR_inspect)    (int sockfd, char *name, int *port);
@@ -46,7 +46,7 @@ void plc_prepareImplementation(enum PLC_BACKEND_TYPE imptype);
 
 /* interface for plc backend*/
 int plc_connect(void);
-int plc_create(int sockfd, plcContainerConf *conf, char **name);
+int plc_create(int sockfd, plcContainerConf *conf, char **name, int container_slot);
 int plc_start(int sockfd, char *name);
 int plc_kill(int sockfd, char *name);
 int plc_inspect(int sockfd, char *name, int *port);

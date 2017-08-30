@@ -12,7 +12,7 @@
 PLC_FunctionEntriesData CurrentPLCImp;
 
 void plc_prepareImplementation(enum PLC_BACKEND_TYPE imptype) {
-    /* Initialize resource broker implement handlers. */
+    /* Initialize plc backend implement handlers. */
     CurrentPLCImp.connect = NULL;
     CurrentPLCImp.create = NULL;
     CurrentPLCImp.start = NULL;
@@ -35,8 +35,8 @@ int plc_connect(void){
     return CurrentPLCImp.connect != NULL ? CurrentPLCImp.connect() : FUNC_RETURN_OK;
 }
 
-int plc_create(int sockfd, plcContainerConf *conf, char **name){
-    return CurrentPLCImp.create != NULL ? CurrentPLCImp.create(sockfd, conf, name) : FUNC_RETURN_OK;
+int plc_create(int sockfd, plcContainerConf *conf, char **name, int container_slot){
+    return CurrentPLCImp.create != NULL ? CurrentPLCImp.create(sockfd, conf, name, container_slot) : FUNC_RETURN_OK;
 }
 
 int plc_start(int sockfd, char *name){
