@@ -23,11 +23,7 @@
 #include "plc_configuration.h"
 #include "containers.h"
 
-#ifdef CURL_DOCKER_API
-    #include "plc_docker_curl_api.h"
-#else
-    #include "plc_docker_api.h"
-#endif
+#include "plc_backend_api.h"
 
 typedef struct {
     char    *name;
@@ -56,7 +52,7 @@ static void cleanup4uds(char *uds_fn) {
 static void cleanup(char *dockerid, char *uds_fn) {
     pid_t pid = 0;
 
-    /* We fork the process to syncronously wait for container to exit */
+    /* We fork the process to syncronously wait for backend to exit */
     pid = fork();
     if (pid == 0) {
         char    psname[200];
@@ -70,23 +66,23 @@ static void cleanup(char *dockerid, char *uds_fn) {
         sprintf(psname, "plcontainer cleaner %s", dockerid);
         set_ps_display(psname, false);
 
-        /* We make 5 attempts to start waiting for the container */
+        /* We make 5 attempts to start waiting for the backend*/
         for (attempt = 0; attempt < 5; attempt++) {
 
-            /* Connect to the Docker API and execute "wait" command for the
-             * target container to wait for its termination */
+            /* Connect to backend and wait command for the
+             * target backend to wait for its termination */
             start = clock();
-            sockfd = plc_docker_connect();
+            sockfd = plc_backend_connect();
             if (sockfd > 0) {
-                res = plc_docker_wait_container(sockfd, dockerid);
-                plc_docker_disconnect(sockfd);
+                res = plc_backend_wait(sockfd, dockerid);
+                plc_backend_disconnect(sockfd);
             } else {
                 res = -1;
             }
             end = clock();
 
-            /* If "wait" has finished successfully - container has finished
-             * and we can remove the container */
+            /* If "wait" has finished successfully - backend has finished
+             * and we can remove the backend  */
             if (res == 0) {
                 break;
             }
@@ -102,16 +98,16 @@ static void cleanup(char *dockerid, char *uds_fn) {
             sleep(1);
         }
 
-        /* Connect to the Docker API to remove the container */
-        sockfd = plc_docker_connect();
+        /* Connect to backend to remove it */
+        sockfd = plc_backend_connect();
         if (sockfd > 0) {
-            res = plc_docker_delete_container(sockfd, dockerid);
+            res = plc_backend_delete(sockfd, dockerid);
             if (res < 0) {
 				cleanup4uds(uds_fn);
                 _exit(1);
             }
         }
-        plc_docker_disconnect(sockfd);
+        plc_backend_disconnect(sockfd);
 
 		cleanup4uds(uds_fn);
         _exit(0);
@@ -191,19 +187,22 @@ plcConn *start_container(plcContainerConf *conf) {
 
 	container_slot = find_container_slot();
 
-    sockfd = plc_docker_connect();
+    enum PLC_BACKEND_TYPE plc_backend_type = BACKEND_DOCKER;
+    plc_backend_prepareImplementation(plc_backend_type);
+
+    sockfd = plc_backend_connect();
     if (sockfd < 0) {
         elog(ERROR, "Cannot connect to the Docker API socket");
         return conn;
     }
 
-    res = plc_docker_create_container(sockfd, conf, &dockerid, container_slot);
+    res = plc_backend_create(sockfd, conf, &dockerid, container_slot);
     if (res < 0) {
         elog(ERROR, "Cannot create Docker container");
         return conn;
     }
 
-    res = plc_docker_start_container(sockfd, dockerid);
+    res = plc_backend_start(sockfd, dockerid);
     if (res < 0) {
         elog(ERROR, "Cannot start Docker container");
         return conn;
@@ -211,14 +210,14 @@ plcConn *start_container(plcContainerConf *conf) {
 
 	/* For network connection only. */
 	if (conf->isNetworkConnection) {
-		res = plc_docker_inspect_container(sockfd, dockerid, &port);
+		res = plc_backend_inspect(sockfd, dockerid, &port);
 		if (res < 0) {
 			elog(ERROR, "Cannot parse host port exposed by Docker container");
 			return conn;
 		}
 	}
 
-    res = plc_docker_disconnect(sockfd);
+    res = plc_backend_disconnect(sockfd);
     if (res < 0) {
         elog(ERROR, "Cannot disconnect from the Docker API socket");
         return conn;
@@ -297,10 +296,10 @@ void stop_containers() {
                 if (containers[i].dockerid != NULL) {
                     int sockfd;
 
-                    sockfd = plc_docker_connect();
+                    sockfd = plc_backend_connect();
                     if (sockfd > 0) {
-                        plc_docker_kill_container(sockfd, containers[i].dockerid);
-                        plc_docker_disconnect(sockfd);
+                        plc_backend_kill(sockfd, containers[i].dockerid);
+                        plc_backend_disconnect(sockfd);
                     }
                     pfree(containers[i].dockerid);
                 }
