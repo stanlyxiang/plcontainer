@@ -12,7 +12,11 @@
 static PLC_FunctionEntriesData CurrentPLCImp;
 
 void plc_backend_prepareImplementation(enum PLC_BACKEND_TYPE imptype) {
-    /* Initialize plc backend implement handlers. */
+    /* 
+     * Initialize plc backend implement handlers. 
+     * Currenty plcontainer only support BACKEND_DOCKER type,
+     * it will support BACKEND_GARDEN, BACKEND_PROCESS in the future.
+     */
     memset(&CurrentPLCImp, 0, sizeof(PLC_FunctionEntriesData));
     switch (imptype) {
         case BACKEND_DOCKER:
