@@ -39,8 +39,8 @@ typedef struct PLC_FunctionEntriesData *PLC_FunctionEntries;
 
 enum PLC_BACKEND_TYPE {
     BACKEND_DOCKER = 0,
-    BACKEND_GARDEN,
-    BACKEND_PROCESS,
+    BACKEND_GARDEN,   /* not implemented yet*/
+    BACKEND_PROCESS,  /* not implemented yet*/
     UNIMPLEMENT_TYPE
 };
 
