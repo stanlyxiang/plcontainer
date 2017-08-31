@@ -13,15 +13,7 @@ static PLC_FunctionEntriesData CurrentPLCImp;
 
 void plc_backend_prepareImplementation(enum PLC_BACKEND_TYPE imptype) {
     /* Initialize plc backend implement handlers. */
-    CurrentPLCImp.connect = NULL;
-    CurrentPLCImp.create = NULL;
-    CurrentPLCImp.start = NULL;
-    CurrentPLCImp.kill = NULL;
-    CurrentPLCImp.inspect = NULL;
-    CurrentPLCImp.wait = NULL;
-    CurrentPLCImp.delete_backend = NULL;
-    CurrentPLCImp.disconnect = NULL;
-
+    memset(&CurrentPLCImp, 0, sizeof(PLC_FunctionEntriesData));
     switch (imptype) {
         case BACKEND_DOCKER:
             plc_docker_init(&CurrentPLCImp);
