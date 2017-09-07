@@ -63,7 +63,7 @@ There are a couple of things that are interesting here:
 
 1. The function definition starts with the line `# container: plc_python` which defines the name of container that will be used for running this function. To check the list of containers defined in the system you can run the command `plcontainer configure --show`. Each container is mapped to a single docker image, you can list the ones available in your system with command `docker images`
 
-1. At the moment two languages are supported for PL/Container: R and Python. Currently the official support images are still building.For an example of how to create a compatible docker image see `Dockerfile.R` and `Dockerfile.python`
+1. At the moment two languages are supported for PL/Container: R and Python. Currently the official support images are still building. For an example of how to create a compatible docker image see `Dockerfile.R` and `Dockerfile.python`
 
 1. The implementation assumes Docker container exposes some port, i.e. the container is started by an API call similar to running `docker run -d -P <image>` to publish the exposed port to a random port on the host.
 
@@ -81,4 +81,4 @@ $$ LANGUAGE plcontainer;
 ### Contributing
 PL/Container is maintained by a core team of developers with commit rights to the [plcontainer repository](https://github.com/greenplum-db/plcontainer) on GitHub. At the same time, we are very eager to receive contributions and any discussions about it from anybody in the wider community.
 
-Everyone interets PL/Container can [subscribe gpdb-dev](mailto:gpdb-dev+subscribe@greenplum.org) mailist list and send related topics to [gpdb-dev](mailto:gpdb-dev@greenplum.org).
+Everyone interests PL/Container can [subscribe gpdb-dev](mailto:gpdb-dev+subscribe@greenplum.org) mailist list and send related topics to [gpdb-dev](mailto:gpdb-dev@greenplum.org).
