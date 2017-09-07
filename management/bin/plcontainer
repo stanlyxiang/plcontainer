@@ -54,12 +54,13 @@ def parseargs():
                         " file or docker image url")
     config_parser.add_argument("-v", "--volume", dest="shared", action="append",help="Bind mount a volume, can work with multiple volumes" +
                         " format: HOST:CONTAINER:[rw|ro]")
+    config_parser.add_argument("-y","--yes", action='store_true', help="Default yes to confirm step in configure.")
     single_option = config_parser.add_mutually_exclusive_group()
-    single_option.add_argument("-e", "--editor", dest="editor", default="vi", help="Editor to use")
+    single_option.add_argument("-e", "--editor", dest="editor", help="Editor to use")
     single_option.add_argument('--reset', action='store_true', help='Reset the configuration file to default')
     single_option.add_argument("--restore", action="store_true", help="Restore the previous version of PL/Container configuration")
-    single_option.add_argument("--cleanup", action="store_true", help="Remove all the backup files for PL/Container")
     single_option.add_argument('-s', '--show', action='store_true', help='Show the contents of configuration file without changing it')
+    single_option.add_argument("-f", "--file", dest="conf_file", help="Overwrite plcontainer configurations with xml file directly")
 
     # for install
     install_parser.add_argument("-i", "--image", dest="image", help="Configure container image location, support Tar.gz image" +
@@ -519,13 +520,22 @@ def main():
         if options.subparser_name == "configure" and options.restore:
             logger.info('Getting list of configuration backups in %s:%s...' % (remote_host, remote_dir))
             filename = get_last_backup(pool, remote_host, remote_dir, PLCONTAINER_CONFIG_FILE)
-            if filename and userinput.ask_yesno(None, "Continue restoring the backup configuration '%s'?" % filename, 'N'):
+            if filename and ( options.yes or userinput.ask_yesno(None, "Continue restoring the backup configuration '%s'?" % filename, 'N') ):
                 pool = WorkerPool(PL_BATCH_SIZE)
                 logger.info('Distributing file %s to all locations...' % PLCONTAINER_CONFIG_FILE)
-                distribute_file(pool, tmp_file, PLCONTAINER_CONFIG_FILE, gpdb_locations)
+                distribute_file(pool, filename, PLCONTAINER_CONFIG_FILE, gpdb_locations)
                 logger.info('Cleaning up old backup file...')
                 remove_files(pool, gpdb_locations, os.path.basename(filename))
                 new_config = True
+
+        if options.subparser_name == "configure" and options.conf_file:
+            logger.info('Preparing the worker pool...')
+            pool = WorkerPool(PL_BATCH_SIZE)
+            logger.info('Backing up file %s on all hosts...' % PLCONTAINER_CONFIG_FILE)
+            backup_file(pool, gpdb_locations, PLCONTAINER_CONFIG_FILE)
+            logger.info('Distributing file %s to all locations...' % options.conf_file)
+            distribute_file(pool, options.conf_file, PLCONTAINER_CONFIG_FILE, gpdb_locations)
+            new_config = True
 
         if options.name and options.subparser_name == "configure":
             elements = get_conf_elements(options)
@@ -547,14 +557,6 @@ def main():
             logger.info('Distributing file %s to all locations...' % PLCONTAINER_CONFIG_FILE)
             distribute_file(pool, tmp_file, PLCONTAINER_CONFIG_FILE, gpdb_locations)
             new_config = True
-
-
-        if options.subparser_name == "configure" and options.restore:
-            if userinput.ask_yesno(None, "Are you sure want to clean up the PL/Container backup configurations?", 'N'):
-                logger.info('Preparing the worker pool...')
-                pool = WorkerPool(PL_BATCH_SIZE)
-                logger.info('Cleaning up old backup files...')
-                remove_files(pool, gpdb_locations, '.' + PLCONTAINER_CONFIG_FILE + '.bak*')
 
         if options.subparser_name == "configure" and options.editor and not options.name:
             changed = edit_file(tmp_file, options.editor)
