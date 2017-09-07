@@ -59,7 +59,6 @@ def parseargs():
     single_option.add_argument("-e", "--editor", dest="editor", help="Editor to use")
     single_option.add_argument('--reset', action='store_true', help='Reset the configuration file to default')
     single_option.add_argument("--restore", action="store_true", help="Restore the previous version of PL/Container configuration")
-    single_option.add_argument("--cleanup", action="store_true", help="Remove all the backup files for PL/Container")
     single_option.add_argument('-s', '--show', action='store_true', help='Show the contents of configuration file without changing it')
     single_option.add_argument("-f", "--file", dest="conf_file", help="Overwrite plcontainer configurations with xml file directly")
 
@@ -524,7 +523,7 @@ def main():
             if filename and ( options.yes or userinput.ask_yesno(None, "Continue restoring the backup configuration '%s'?" % filename, 'N') ):
                 pool = WorkerPool(PL_BATCH_SIZE)
                 logger.info('Distributing file %s to all locations...' % PLCONTAINER_CONFIG_FILE)
-                distribute_file(pool, tmp_file, PLCONTAINER_CONFIG_FILE, gpdb_locations)
+                distribute_file(pool, filename, PLCONTAINER_CONFIG_FILE, gpdb_locations)
                 logger.info('Cleaning up old backup file...')
                 remove_files(pool, gpdb_locations, os.path.basename(filename))
                 new_config = True
