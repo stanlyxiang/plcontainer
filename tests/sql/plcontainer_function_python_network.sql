@@ -19,5 +19,3 @@ select python_network_test1(i) from test_python_network;
 select python_network_test2() from test_python_network;
 
 \! plcontainer configure --restore -y
-
-select * from plcontainer_refresh_config;

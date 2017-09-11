@@ -46,10 +46,3 @@ select python_network_test2() from test_python_network;
 (11 rows)
 
 \! plcontainer configure --restore -y
-select * from plcontainer_refresh_config;
- gp_segment_id | plcontainer_refresh_local_config 
----------------+----------------------------------
-             0 | ok
-            -1 | ok
-(2 rows)
-
