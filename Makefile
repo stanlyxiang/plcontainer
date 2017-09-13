@@ -14,8 +14,8 @@ COMMONDIR = ./src/common
 MGMTDIR = ./management
 PYCLIENTDIR = src/pyclient/bin
 RCLIENTDIR = src/rclient/bin
-PYCLIENTINSTALL = pyclient/pyclient
-RCLIENTINSTALL = rclient/rclient
+PYCLIENTINSTALL = pyclient
+RCLIENTINSTALL = rclient
 
 # Files to build
 FILES = $(shell find $(SRCDIR) -not -path "*client*" -type f -name "*.c")
@@ -85,8 +85,8 @@ install-extra:
 install-clients: clients
 	$(MKDIR_P) '$(DESTDIR)$(bindir)/pyclient'
 	$(MKDIR_P) '$(DESTDIR)$(bindir)/rclient'
-	$(INSTALL_PROGRAM) '$(PYCLIENTDIR)/client'        '$(DESTDIR)$(bindir)/$(PYCLIENTINSTALL)'
-	$(INSTALL_PROGRAM) '$(RCLIENTDIR)/client'         '$(DESTDIR)$(bindir)/$(RCLIENTINSTALL)'
+	cp $(PYCLIENTDIR)/* $(DESTDIR)$(bindir)/$(PYCLIENTINSTALL)
+	cp $(RCLIENTDIR)/*  $(DESTDIR)$(bindir)/$(RCLIENTINSTALL)
 
 .PHONY: installcheck
 installcheck:
