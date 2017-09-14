@@ -134,7 +134,13 @@ int start_listener()
 {
 	int sock;
 
-	char* network = getenv("USE_NETWORK") == NULL ? "no" : getenv("USE_NETWORK");
+	char* network;
+	if(getenv("USE_NETWORK") == NULL){
+		network = "no";
+		lprintf(WARNING, "USE_NETWORK is not set, use default value \"no\".");
+	} else {
+		network = getenv("USE_NETWORK");
+	}
 	if (strcasecmp("true", network) == 0 || strcasecmp("yes", network) == 0) {
 		sock = start_listener_inet();
 	} else {
