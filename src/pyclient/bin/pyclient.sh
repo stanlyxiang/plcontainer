@@ -10,4 +10,4 @@ fi
 
 cd /clientdir
 
-./client
+./pyclient
