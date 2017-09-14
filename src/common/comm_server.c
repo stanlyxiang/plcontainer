@@ -134,8 +134,14 @@ int start_listener()
 {
 	int sock;
 
-	if (strcasecmp("true", getenv("USE_NETWORK")) == 0 ||
-		strcasecmp("yes", getenv("USE_NETWORK")) == 0) {
+	char* network;
+	if(getenv("USE_NETWORK") == NULL){
+		network = "no";
+		lprintf(WARNING, "USE_NETWORK is not set, use default value \"no\".");
+	} else {
+		network = getenv("USE_NETWORK");
+	}
+	if (strcasecmp("true", network) == 0 || strcasecmp("yes", network) == 0) {
 		sock = start_listener_inet();
 	} else {
 		sock = start_listener_ipc(&uds_client_fn);

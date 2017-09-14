@@ -26,6 +26,8 @@ common_objs = $(foreach src,$(common_src),$(subst .c,.o,$(src)))
 python_src = $(shell find . -name "*.c")
 python_objs = $(foreach src,$(python_src),$(subst .c,.o,$(src)))
 
+PYTHONCLIENT=pyclient
+
 .PHONY: default
 default: clean all
 
@@ -37,8 +39,8 @@ clean_common:
 	$(CC) $(PYTHON_CFLAGS) $(CFLAGS) -c -o $@ $^
 
 client: $(python_objs) $(common_objs)
-	LIBRARY_PATH=$(LD_LIBRARY_PATH) $(CC) -o $@ $^ $(PYTHON_LDFLAGS) $(LIBS)
-	cp client bin
+	LIBRARY_PATH=$(LD_LIBRARY_PATH) $(CC) -o $(PYTHONCLIENT) $^ $(PYTHON_LDFLAGS) $(LIBS)
+	cp $(PYTHONCLIENT) bin
 
 .PHONY: debug
 debug: CUSTOMFLAGS = -D_DEBUG_CLIENT -g -O0
@@ -50,5 +52,5 @@ all: client
 
 clean: clean_common
 	rm -f *.o
-	rm -f client
-	rm -f bin/client
+	rm -f $(PYTHONCLIENT)
+	rm -f bin/$(PYTHONCLIENT)

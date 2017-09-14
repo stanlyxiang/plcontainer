@@ -222,7 +222,7 @@ def update_xml_new_container(elements):
 
     # default command
     command = ElementTree.Element("command")
-    command.text = "/clientdir/pyclient"
+    command.text = "/clientdir/pyclient.sh"
 
     container.append(name)
     container.append(image)
