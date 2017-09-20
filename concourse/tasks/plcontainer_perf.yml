@@ -8,7 +8,8 @@ inputs:
   - name: ccp_src
   - name: plcontainer_gpdb_build
   - name: cluster_env_files
-  - name: plcontainer_client_docker_image
+  - name: plcontainer_pyclient_docker_image
+  - name: plcontainer_rclient_docker_image
 outputs:
   - name: plcontainer_perf_result
 params:

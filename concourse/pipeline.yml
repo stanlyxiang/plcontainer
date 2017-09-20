@@ -8,6 +8,7 @@ groups:
   - plcontainer_build_centos6
   - plcontainer_build_centos7
   - plcontainer_build_python_image
+  - plcontainer_build_r_image
   - plcontainer_function_test_centos6
   - plcontainer_perf_test_centos6
   - plcontainer_function_test_centos7
@@ -221,6 +222,24 @@ resources:
     secret_access_key: {{bucket-secret-access-key}}
     versioned_file: release/gpdb5/data-science/DataSciencePython-1.0.0-gp5-rhel7-x86_64.gppkg
 
+- name: r-gp5
+  type: s3
+  source:
+    access_key_id: {{bucket-access-key-id}}
+    bucket: {{pl-bucket-name}}
+    region_name: {{aws-region}}
+    secret_access_key: {{bucket-secret-access-key}}
+    versioned_file: build/gpdb5/r/bin_r_centos7.tar.gz
+
+- name: datascience-r-gp5
+  type: s3
+  source:
+    access_key_id: {{bucket-access-key-id}}
+    bucket: {{pl-bucket-name}}
+    region_name: {{aws-region}}
+    secret_access_key: {{bucket-secret-access-key}}
+    versioned_file: release/gpdb5/data-science/DataScienceR-1.0.0-gp5-rhel7-x86_64.gppkg
+
 - name: plcontainer_docker_image_centos_python
   type: s3
   source:
@@ -228,7 +247,16 @@ resources:
     bucket: {{pl-bucket-name}}
     region_name: {{aws-region}}
     secret_access_key: {{bucket-secret-access-key}}
-    versioned_file: build/gpdb5/plcontainer/plcontainer-devel-images.tar.gz
+    versioned_file: build/gpdb5/plcontainer/plcontainer-python-devel-images.tar.gz
+
+- name: plcontainer_docker_image_centos_r
+  type: s3
+  source:
+    access_key_id: {{bucket-access-key-id}}
+    bucket: {{pl-bucket-name}}
+    region_name: {{aws-region}}
+    secret_access_key: {{bucket-secret-access-key}}
+    versioned_file: build/gpdb5/plcontainer/plcontainer-r-devel-images.tar.gz
 
 - name: bin_gpdb_centos7
   type: s3
@@ -286,7 +314,7 @@ jobs:
     - get: plr
       resource: plr_gpdb5_centos6_build
   - task: plcontainer_gpdb_build
-    file: plcontainer_src/concourse/tasks/plcontainer_gpdb_build.yml
+    file: plcontainer_src/concourse/tasks/plcontainer_build.yml
     image: centos-gpdb-dev-6
     input_mapping:
       bin_gpdb: bin_gpdb_centos6
@@ -307,7 +335,7 @@ jobs:
     - get: plr
       resource: plr_gpdb5_centos7_build
   - task: plcontainer_gpdb_build
-    file: plcontainer_src/concourse/tasks/plcontainer_gpdb_build.yml
+    file: plcontainer_src/concourse/tasks/plcontainer_build.yml
     image: centos-gpdb-dev-7
     input_mapping:
       bin_gpdb: bin_gpdb_centos7
@@ -327,11 +355,15 @@ jobs:
     - get: gpdb_binary
       resource: bin_gpdb_centos6
     - get: ccp_src
-      passed: [plcontainer_build_python_image]
+      passed: [plcontainer_build_python_image, plcontainer_build_r_image]
     - get: centos-gpdb-dev-6
-    - get: plcontainer_client_docker_image
+    - get: plcontainer_pyclient_docker_image
       resource: plcontainer_docker_image_centos_python
       passed: [plcontainer_build_python_image]
+      trigger: true
+    - get: plcontainer_rclient_docker_image
+      resource: plcontainer_docker_image_centos_r
+      passed: [plcontainer_build_r_image]
       trigger: true
     - get: plcontainer_gpdb_centos6_build
       passed: [plcontainer_build_centos6]
@@ -352,7 +384,7 @@ jobs:
     on_failure:
       <<: *ccp_destroy6
   - task: plcontainer
-    file: plcontainer_src/concourse/tasks/plcontainer.yml
+    file: plcontainer_src/concourse/tasks/plcontainer_tests.yml
     params:
       platform: centos6
     image: centos-gpdb-dev-6
@@ -377,8 +409,11 @@ jobs:
       passed:
       - plcontainer_function_test_centos6
     - get: centos-gpdb-dev-6
-    - get: plcontainer_client_docker_image
+    - get: plcontainer_pyclient_docker_image
       resource: plcontainer_docker_image_centos_python
+      passed: [plcontainer_function_test_centos6]
+    - get: plcontainer_rclient_docker_image
+      resource: plcontainer_docker_image_centos_r
       passed: [plcontainer_function_test_centos6]
     - get: plcontainer_gpdb_centos6_build
       passed: [plcontainer_function_test_centos6]
@@ -427,11 +462,15 @@ jobs:
     - get: gpdb_binary
       resource: bin_gpdb_centos7
     - get: ccp_src
-      passed: [plcontainer_build_python_image]
+      passed: [plcontainer_build_python_image, plcontainer_build_r_image]
     - get: centos-gpdb-dev-7
-    - get: plcontainer_client_docker_image
+    - get: plcontainer_pyclient_docker_image
       resource: plcontainer_docker_image_centos_python
       passed: [plcontainer_build_python_image]
+      trigger: true
+    - get: plcontainer_rclient_docker_image
+      resource: plcontainer_docker_image_centos_r
+      passed: [plcontainer_build_r_image]
       trigger: true
     - get: plcontainer_gpdb_centos7_build
       passed: [plcontainer_build_centos7]
@@ -452,7 +491,7 @@ jobs:
     on_failure:
       <<: *ccp_destroy7
   - task: plcontainer
-    file: plcontainer_src/concourse/tasks/plcontainer.yml
+    file: plcontainer_src/concourse/tasks/plcontainer_tests.yml
     params:
       platform: centos7
     image: centos-gpdb-dev-7
@@ -477,8 +516,11 @@ jobs:
       passed:
       - plcontainer_function_test_centos7
     - get: centos-gpdb-dev-7
-    - get: plcontainer_client_docker_image
+    - get: plcontainer_pyclient_docker_image
       resource: plcontainer_docker_image_centos_python
+      passed: [plcontainer_function_test_centos7]
+    - get: plcontainer_rclient_docker_image
+      resource: plcontainer_docker_image_centos_r
       passed: [plcontainer_function_test_centos7]
     - get: plcontainer_gpdb_centos7_build
       passed: [plcontainer_function_test_centos7]
@@ -529,7 +571,7 @@ jobs:
     - get: python
       trigger: true
       resource: python-gp5
-    - get: datascience-python 
+    - get: datascience
       trigger: true
       resource: datascience-python-gp5
     - get: openssl
@@ -550,9 +592,10 @@ jobs:
     on_failure:
       <<: *ccp_destroy7
   - task: docker_build
-    file: plcontainer_src/concourse/tasks/docker_build.yml
+    file: plcontainer_src/concourse/tasks/docker_build_python.yml
     params:
       platform: centos7
+      language: python
     image: centos-gpdb-dev-6
     input_mapping:
       plcontainer_gpdb_build: plcontainer_gpdb_centos6_build
@@ -560,8 +603,51 @@ jobs:
       <<: *debug_sleep7
   - put: plcontainer_docker_image_centos_python
     params:
-      file: plcontainer_docker_image/plcontainer-devel-images.tar.gz
+      file: plcontainer_docker_image/plcontainer-python-devel-images.tar.gz
   - *ccp_destroy7
 
 
-
+- name: plcontainer_build_r_image
+  plan:
+  - aggregate:
+    - get: plcontainer_src
+    - get: gpdb_src
+    - get: gpdb_binary
+      resource: bin_gpdb_centos6
+    - get: ccp_src
+    - get: centos-gpdb-dev-6
+    - get: r
+      trigger: true
+      resource: r-gp5
+    - get: datascience
+      trigger: true
+      resource: datascience-r-gp5
+  - put: terraform
+    params:
+      action: create
+      delete_on_failure: true
+      generate_random_name: true
+      terraform_source: ccp_src/aws/
+      vars:
+        aws_instance-node-instance_type: t2.medium
+        platform: centos7
+  - task: gen_cluster
+    file: ccp_src/ci/tasks/gen_cluster.yml
+    params:
+      platform: centos7
+    on_failure:
+      <<: *ccp_destroy7
+  - task: docker_build
+    file: plcontainer_src/concourse/tasks/docker_build_r.yml
+    params:
+      platform: centos7
+      language: r
+    image: centos-gpdb-dev-6
+    input_mapping:
+      plcontainer_gpdb_build: plcontainer_gpdb_centos6_build
+    on_failure:
+      <<: *debug_sleep7
+  - put: plcontainer_docker_image_centos_r
+    params:
+      file: plcontainer_docker_image/plcontainer-r-devel-images.tar.gz
+  - *ccp_destroy7

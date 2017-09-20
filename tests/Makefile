@@ -28,7 +28,11 @@ REGRESS_PYTHON_TESTS = plcontainer_test_python \
 	plcontainer_function_python_network
 
 # Regression Tests for GPDB5
-REGRESS_GPDB5 = $(REGRESS_BASIC) $(REGRESS_R) $(REGRESS_PYTHON) $(REGRESS_PYTHON_TESTS)
+REGRESS_GPDB5 = $(REGRESS_BASIC) \
+		$(REGRESS_R) \
+		$(REGRESS_R_TESTS) \
+		$(REGRESS_PYTHON) \
+		$(REGRESS_PYTHON_TESTS)
 
 PSQLDIR = $(bindir)
 
