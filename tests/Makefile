@@ -30,6 +30,7 @@ REGRESS_PYTHON_TESTS = plcontainer_test_python \
 # Regression Tests for GPDB5
 REGRESS_GPDB5 = $(REGRESS_BASIC) \
 		$(REGRESS_R) \
+		$(REGRESS_R_TESTS) \
 		$(REGRESS_PYTHON) \
 		$(REGRESS_PYTHON_TESTS)
 
