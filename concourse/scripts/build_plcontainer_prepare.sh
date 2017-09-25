@@ -19,10 +19,10 @@ function _main() {
   chown -h gpadmin:gpadmin /usr/local/greenplum-db
   
   chown -R gpadmin:gpadmin ${TOP_DIR}
-  chown gpadmin:gpadmin ${CWDIR}/plcontainer_gpdb_build.sh
+  chown gpadmin:gpadmin ${CWDIR}/build_plcontainer.sh
   su gpadmin -c "OUTPUT=${OUTPUT} \
                  MODE=${MODE} \
-                 bash ${CWDIR}/plcontainer_gpdb_build.sh $(pwd)"
+                 bash ${CWDIR}/build_plcontainer.sh $(pwd)"
 }
 
 _main "$@"

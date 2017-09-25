@@ -31,4 +31,17 @@
         <use_network>yes</use_network>
     </container>
 
+    <container>
+        <name>plc_python_shared</name>
+        <image>pivotaldata/plcontainer_python_shared:devel</image>
+        <command>/clientdir/pyclient.sh</command>
+        <shared_directory access="ro" container="/clientdir" host="/usr/local/greenplum-db-devel/bin/pyclient"/>
+    </container>
+
+    <container>
+        <name>plc_r_shared</name>
+        <image>pivotaldata/plcontainer_r_shared:devel</image>
+        <command>/clientdir/rclient.sh</command>
+        <shared_directory access="ro" container="/clientdir" host="/usr/local/greenplum-db-devel/bin/rclient"/>
+    </container>
 </configuration>
