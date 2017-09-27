@@ -1,7 +1,7 @@
 /*------------------------------------------------------------------------------
  *
  *
- * Copyright (c) 2016, Pivotal.
+ * Copyright (c) 2016-Present Pivotal Software, Inc
  *
  *------------------------------------------------------------------------------
  */
@@ -25,6 +25,7 @@ typedef enum {
 typedef struct plcMsgSQL {
     base_message_content;
     plcSqlType  sqltype;
+	long long   limit;
     char       *statement;
 } plcMsgSQL;
 

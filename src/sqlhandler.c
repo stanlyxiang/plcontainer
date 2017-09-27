@@ -4,7 +4,7 @@
  * SQL message handler implementation.
  *
  *
- * Copyright (c) 2016, Pivotal.
+ * Copyright (c) 2016-Present Pivotal Software, Inc
  *
  *------------------------------------------------------------------------------
  */
@@ -71,14 +71,14 @@ static plcMsgResult *create_sql_result() {
     return result;
 }
 
-plcMessage *handle_sql_message(plcMsgSQL *msg) {
+plcMessage *handle_sql_message(plcMsgSQL *msg, plcProcInfo *pinfo) {
     int retval;
     plcMessage   *result = NULL;
 
     PG_TRY();
     {
         BeginInternalSubTransaction(NULL);
-        retval = SPI_exec(msg->statement, 0);
+        retval = SPI_execute(msg->statement, pinfo->fn_readonly, (long) msg->limit);
         switch (retval) {
             case SPI_OK_SELECT:
             case SPI_OK_INSERT_RETURNING:
@@ -88,7 +88,9 @@ plcMessage *handle_sql_message(plcMsgSQL *msg) {
                 result = (plcMessage*)create_sql_result();
                 break;
             default:
-                lprintf(ERROR, "cannot handle non-select sql at the moment");
+                lprintf(ERROR, "Cannot handle sql ('%s') with fn_readonly (%d) "
+						"and limit (%lld). Returns %d", msg->statement,
+						pinfo->fn_readonly, msg->limit, retval);
                 break;
         }
 
