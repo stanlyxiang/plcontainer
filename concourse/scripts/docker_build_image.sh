@@ -2,13 +2,14 @@
 
 set -exo pipefail
 
-DockerFolder="~/plcontainer_src/dockerfiles/$language/"
+DockerFolder="~/data-science-bundle/plcontainer_dockerfiles/$language/"
 docker_build() {
 	local node=$1
 	ssh $node "bash -c \" mkdir -p ~/artifacts_$language\" "
 
 	scp -r datascience/Data*.gppkg $node:~/artifacts_$language
 	scp -r plcontainer_src $node:~/
+	scp -r data-science-bundle $node:~/
 	if [[ $language = "python" ]]; then
 		scp -r python/python*.targz $node:~/artifacts_python
 		scp -r openssl/openssl*.gz $node:~/artifacts_python
