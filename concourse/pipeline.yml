@@ -17,6 +17,18 @@ groups:
 ################################################################################
 ################################## RESOURCES ###################################
 ################################################################################
+ccp_create_params_anchor: &ccp_default_params
+  action: create
+  delete_on_failure: true
+  generate_random_name: true
+  terraform_source: ccp_src/aws/
+
+ccp_gen_cluster_default_params_anchor: &ccp_gen_cluster_default_params
+  AWS_ACCESS_KEY_ID: {{tf-machine-access-key-id}}
+  AWS_SECRET_ACCESS_KEY: {{tf-machine-secret-access-key}}
+  AWS_DEFAULT_REGION: {{aws-region}}
+  BUCKET_PATH: {{tf-bucket-path-plcontainer}}
+  BUCKET_NAME: {{tf-bucket-name}}
 
 ccp_options_anchor6: &ccp_options6
   terraform_source: ccp_src/aws/
@@ -100,6 +112,7 @@ resources:
     branch: {{ccp-git-branch}}
     private_key: {{ccp-git-key}}
     uri: {{ccp-git-remote}}
+    tag_filter: 1.0.0
 
 - name: plcontainer_src
   type: git
@@ -128,7 +141,7 @@ resources:
       region_name: {{aws-region}}
       # This is not parameterized, on purpose. All tfstates will go to this spot,
       # and different teams will place there clusters' tfstate files under different paths
-      bucket: gpdb5-pipeline-dynamic-terraform
+      bucket: {{tf-bucket-name}}
       ###########################################################
       # Two conventions are allowed for bucket_path:            #
       # 1) Cluster are expected to be destroyed automatically   #
@@ -370,16 +383,14 @@ jobs:
       trigger: true
   - put: terraform
     params:
-      action: create
-      delete_on_failure: true
-      generate_random_name: true
-      terraform_source: ccp_src/aws/
+      <<: *ccp_default_params
       vars:
         aws_instance-node-instance_type: t2.medium
         platform: centos6
   - task: gen_cluster
     file: ccp_src/ci/tasks/gen_cluster.yml
     params:
+      <<: *ccp_gen_cluster_default_params
       platform: centos6
     on_failure:
       <<: *ccp_destroy6
@@ -419,16 +430,14 @@ jobs:
       passed: [plcontainer_function_test_centos6]
   - put: terraform
     params:
-      action: create
-      delete_on_failure: true
-      generate_random_name: true
-      terraform_source: ccp_src/aws/
+      <<: *ccp_default_params
       vars:
         aws_instance-node-instance_type: t2.medium
         platform: centos6
   - task: gen_cluster
     file: ccp_src/ci/tasks/gen_cluster.yml
     params:
+      <<: *ccp_gen_cluster_default_params
       platform: centos6
     on_failure:
       <<: *ccp_destroy6
@@ -477,16 +486,14 @@ jobs:
       trigger: true
   - put: terraform
     params:
-      action: create
-      delete_on_failure: true
-      generate_random_name: true
-      terraform_source: ccp_src/aws/
+      <<: *ccp_default_params
       vars:
         aws_instance-node-instance_type: t2.medium
         platform: centos7
   - task: gen_cluster
     file: ccp_src/ci/tasks/gen_cluster.yml
     params:
+      <<: *ccp_gen_cluster_default_params
       platform: centos7
     on_failure:
       <<: *ccp_destroy7
@@ -526,16 +533,14 @@ jobs:
       passed: [plcontainer_function_test_centos7]
   - put: terraform
     params:
-      action: create
-      delete_on_failure: true
-      generate_random_name: true
-      terraform_source: ccp_src/aws/
+      <<: *ccp_default_params
       vars:
         aws_instance-node-instance_type: t2.medium
         platform: centos7
   - task: gen_cluster
     file: ccp_src/ci/tasks/gen_cluster.yml
     params:
+      <<: *ccp_gen_cluster_default_params
       platform: centos7
     on_failure:
       <<: *ccp_destroy7
@@ -578,16 +583,14 @@ jobs:
       trigger: true
   - put: terraform
     params:
-      action: create
-      delete_on_failure: true
-      generate_random_name: true
-      terraform_source: ccp_src/aws/
+      <<: *ccp_default_params
       vars:
         aws_instance-node-instance_type: t2.medium
         platform: centos7
   - task: gen_cluster
     file: ccp_src/ci/tasks/gen_cluster.yml
     params:
+      <<: *ccp_gen_cluster_default_params
       platform: centos7
     on_failure:
       <<: *ccp_destroy7
@@ -624,16 +627,14 @@ jobs:
       resource: datascience-r-gp5
   - put: terraform
     params:
-      action: create
-      delete_on_failure: true
-      generate_random_name: true
-      terraform_source: ccp_src/aws/
+      <<: *ccp_default_params
       vars:
         aws_instance-node-instance_type: t2.medium
         platform: centos7
   - task: gen_cluster
     file: ccp_src/ci/tasks/gen_cluster.yml
     params:
+      <<: *ccp_gen_cluster_default_params
       platform: centos7
     on_failure:
       <<: *ccp_destroy7
