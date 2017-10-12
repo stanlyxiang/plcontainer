@@ -2,7 +2,8 @@
 
 set -exo pipefail
 
-DockerFolder="~/plcontainer_src/dockerfiles/$language/"
+DockerFolder="~/data-science-bundle/plcontainer_dockerfiles/$language/"
+
 pushd plcontainer_src
 if [ "$DEV_RELEASE" == "devel" ]; then
 	IMAGE_NAME="plcontainer-$language-images-devel.tar.gz"
@@ -18,6 +19,7 @@ docker_build() {
 
 	scp -r datascience/Data*.gppkg $node:~/artifacts_$language
 	scp -r plcontainer_src $node:~/
+	scp -r data-science-bundle $node:~/
 	if [[ $language = "python" ]]; then
 		scp -r python/python*.targz $node:~/artifacts_python
 		scp -r openssl/openssl*.gz $node:~/artifacts_python

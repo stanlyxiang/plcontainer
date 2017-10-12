@@ -105,6 +105,12 @@ resource_types:
 resources:
 
 # Github Source Codes
+- name: data-science-bundle
+  type: git
+  source:
+    branch: master
+    private_key: {{plpkg-git-key}}
+    uri: git@github.com:greenplum-db/data-science-bundle.git
 
 - name: ccp_src
   type: git
@@ -573,6 +579,7 @@ jobs:
       resource: bin_gpdb_centos6
     - get: ccp_src
     - get: centos-gpdb-dev-6
+    - get: data-science-bundle
     - get: python
       trigger: true
       resource: python-gp5
@@ -619,6 +626,7 @@ jobs:
       resource: bin_gpdb_centos6
     - get: ccp_src
     - get: centos-gpdb-dev-6
+    - get: data-science-bundle
     - get: r
       trigger: true
       resource: r-gp5
