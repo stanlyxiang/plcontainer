@@ -17,7 +17,6 @@ groups:
 ################################################################################
 ################################## RESOURCES ###################################
 ################################################################################
-
 ccp_create_params_anchor: &ccp_default_params
   action: create
   delete_on_failure: true
@@ -106,6 +105,12 @@ resource_types:
 resources:
 
 # Github Source Codes
+- name: data-science-bundle
+  type: git
+  source:
+    branch: master
+    private_key: {{plpkg-git-key}}
+    uri: git@github.com:greenplum-db/data-science-bundle.git
 
 - name: ccp_src
   type: git
@@ -254,6 +259,7 @@ resources:
     region_name: {{aws-region}}
     secret_access_key: {{bucket-secret-access-key}}
     versioned_file: release/gpdb5/data-science/DataScienceR-1.0.0-gp5-rhel7-x86_64.gppkg
+
 - name: plcontainer_docker_image_centos_python
   type: s3
   source:
@@ -373,14 +379,14 @@ jobs:
     - get: gpdb_binary
       resource: bin_gpdb_centos6
     - get: ccp_src
-      passed: [plcontainer_build_python_image]
+      passed: [plcontainer_build_python_image, plcontainer_build_r_image]
     - get: centos-gpdb-dev-6
     - get: plcontainer_pyclient_docker_image
       resource: plcontainer_docker_image_centos_python
       passed: [plcontainer_build_python_image]
       trigger: true
     - get: plcontainer_rclient_docker_image
-      resource: plcontainer_docker_image_centos_r 
+      resource: plcontainer_docker_image_centos_r
       passed: [plcontainer_build_r_image]
       trigger: true
     - get: plcontainer_gpdb_centos6_build
@@ -425,8 +431,11 @@ jobs:
       passed:
       - plcontainer_function_test_centos6
     - get: centos-gpdb-dev-6
-    - get: plcontainer_client_docker_image
+    - get: plcontainer_pyclient_docker_image
       resource: plcontainer_docker_image_centos_python
+      passed: [plcontainer_function_test_centos6]
+    - get: plcontainer_rclient_docker_image
+      resource: plcontainer_docker_image_centos_r
       passed: [plcontainer_function_test_centos6]
     - get: plcontainer_gpdb_centos6_build
       passed: [plcontainer_function_test_centos6]
@@ -473,7 +482,7 @@ jobs:
     - get: gpdb_binary
       resource: bin_gpdb_centos7
     - get: ccp_src
-      passed: [plcontainer_build_python_image]
+      passed: [plcontainer_build_python_image, plcontainer_build_r_image]
     - get: centos-gpdb-dev-7
     - get: plcontainer_pyclient_docker_image
       resource: plcontainer_docker_image_centos_python
@@ -525,8 +534,11 @@ jobs:
       passed:
       - plcontainer_function_test_centos7
     - get: centos-gpdb-dev-7
-    - get: plcontainer_client_docker_image
+    - get: plcontainer_pyclient_docker_image
       resource: plcontainer_docker_image_centos_python
+      passed: [plcontainer_function_test_centos7]
+    - get: plcontainer_rclient_docker_image
+      resource: plcontainer_docker_image_centos_r
       passed: [plcontainer_function_test_centos7]
     - get: plcontainer_gpdb_centos7_build
       passed: [plcontainer_function_test_centos7]
@@ -573,6 +585,7 @@ jobs:
       resource: bin_gpdb_centos6
     - get: ccp_src
     - get: centos-gpdb-dev-6
+    - get: data-science-bundle
     - get: python
       resource: python-gp5
     - get: datascience
@@ -618,6 +631,7 @@ jobs:
       resource: bin_gpdb_centos6
     - get: ccp_src
     - get: centos-gpdb-dev-6
+    - get: data-science-bundle
     - get: r
       resource: r-gp5
     - get: datascience
