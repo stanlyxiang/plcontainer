@@ -94,6 +94,7 @@ static plcCurlBuffer *plcCurlRESTAPICall(plcCurlCallType cType,
         /* Setting up request URL */
         fullurl = palloc(strlen(plc_docker_url_prefix) + strlen(url) + 2);
         sprintf(fullurl, "%s%s", plc_docker_url_prefix, url);
+        elog(LOG, "the fullurl is %s.", fullurl);
         curl_easy_setopt(curl, CURLOPT_URL, fullurl);
 
         /* Providing a buffer to store errors in */
@@ -149,6 +150,7 @@ static plcCurlBuffer *plcCurlRESTAPICall(plcCurlCallType cType,
 
             curl_easy_getinfo (curl, CURLINFO_RESPONSE_CODE, &http_code);
 			buffer->status = (int) http_code;
+	    elog(LOG, "the return code is %ld.", http_code);
         }
 
 cleanup:
@@ -202,6 +204,7 @@ int plc_docker_create_container(plcContainerConf *conf, char **name, int contain
             volumeShare,
             ((long long)conf->memoryMb) * 1024 * 1024);
 
+    elog(LOG, "the message body is: %s.", messageBody);
     /* Make a call */
     response = plcCurlRESTAPICall(PLC_HTTP_POST, "/containers/create", messageBody);
     /* Free up intermediate data */
@@ -217,12 +220,12 @@ int plc_docker_create_container(plcContainerConf *conf, char **name, int contain
 				"Failed to create container (return code: %d).", res);
 		res = -1;
 	}
-
+	elog(LOG, "the restapi call return status is: %d", res);
 	if (res < 0) {
 		goto cleanup;
 	}
     res = docker_inspect_string(response->data, name, PLC_INSPECT_NAME);
-
+    elog(LOG, "the inspect call return status is: %d", res);
 	if (res < 0) {
 		elog(DEBUG1, "Error parsing container ID during creating container with errno %d.", res);
 		snprintf(api_error_message, sizeof(api_error_message),
@@ -248,7 +251,7 @@ int plc_docker_start_container(char *name) {
     response = plcCurlRESTAPICall(PLC_HTTP_POST, url, NULL);
     res = response->status;
     plcCurlBufferFree(response);
-
+    elog(LOG, "the restapi for start container is: %d", res);
 	if (res == 204 || res == 304) {
 		res = 0;
 	} else if (res >= 0) {

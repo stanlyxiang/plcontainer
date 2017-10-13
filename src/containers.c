@@ -247,6 +247,7 @@ plcConn *start_backend(plcContainerConf *conf) {
     plc_backend_prepareImplementation(plc_backend_type);
 
     res = plc_backend_create(conf, &dockerid, container_slot);
+    elog(LOG, "the created docker id is: %s, the res is %d.", dockerid, res);
     if (res < 0) {
         elog(ERROR, "%s", api_error_message);
         return conn;
