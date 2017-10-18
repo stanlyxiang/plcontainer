@@ -251,6 +251,7 @@ plcConn *start_backend(plcContainerConf *conf) {
         elog(ERROR, "%s", api_error_message);
         return conn;
     }
+    elog(DEBUG1, "docker created with id %s.", dockerid);
 
 	/* Insert it into containers[] so that in case below operations fails,
 	 * it could longjump to plcontainer_call_handler()->delete_containers()
@@ -264,6 +265,12 @@ plcConn *start_backend(plcContainerConf *conf) {
         elog(ERROR, "%s", api_error_message);
         return conn;
     }
+
+    time_t rawtime;
+    struct tm * timeinfo;
+    time ( &rawtime );
+    timeinfo = localtime ( &rawtime );
+    elog(DEBUG1, "container %s has started at %s", dockerid, asctime (timeinfo));
 
 	/* For network connection only. */
 	if (conf->isNetworkConnection) {
