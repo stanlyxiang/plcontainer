@@ -93,7 +93,7 @@ static void cleanup4uds(char *uds_fn) {
 static void cleanup(char *dockerid, char *uds_fn) {
     pid_t pid = 0;
 
-    /* We fork the process to syncronously wait for backend to exit */
+    /* We fork the process to synchronously wait for backend to exit */
     pid = fork();
     if (pid == 0) {
         char    psname[200];

@@ -80,13 +80,19 @@ static plcCurlBuffer *plcCurlRESTAPICall(plcCurlCallType cType,
 
     memset(errbuf, 0, CURL_ERROR_SIZE);
 
+    /* pay attention to the performance introduced by global init and cleanup
+     * also a new curl handle for each udf is much more waste. need further 
+     * performance optimization.
+     */
+    curl_global_init(CURL_GLOBAL_ALL);
     curl = curl_easy_init();
 
     if (curl) {
         char *fullurl;
         struct curl_slist *headers = NULL; // init to NULL is important
 
-		curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
+        curl_easy_reset(curl);
+        curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
 
         /* Setting Docker API endpoint */
         curl_easy_setopt(curl, CURLOPT_UNIX_SOCKET_PATH, plc_docker_socket);
@@ -148,17 +154,20 @@ static plcCurlBuffer *plcCurlRESTAPICall(plcCurlCallType cType,
             long http_code = 0;
 
             curl_easy_getinfo (curl, CURLINFO_RESPONSE_CODE, &http_code);
-			buffer->status = (int) http_code;
+            buffer->status = (int) http_code;
+            elog(DEBUG1, "CURL response code is %ld. CURL response message is %s", http_code, buffer->data);
         }
 
 cleanup:
         pfree(fullurl);
-		curl_easy_cleanup(curl);
+        curl_slist_free_all(headers);
+        curl_easy_cleanup(curl);
     } else {
 		snprintf(api_error_message, sizeof(api_error_message),
 				"Failed to start a curl session for unknown reason");
 		buffer->status = -1;
 	}
+    curl_global_cleanup();
 
     return buffer;
 }
