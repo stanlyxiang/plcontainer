@@ -23,6 +23,9 @@
 
 static plcContainerConf *plcContConf = NULL;
 static int plcNumContainers = 0;
+// we just want to avoid cleanup process to remove previous domain
+// socket file, so int32 is sufficient
+static int domain_socket_no = 0;
 
 static int parse_container(xmlNode *node, plcContainerConf *conf);
 static plcContainerConf *get_containers(xmlNode *node, int *size);
@@ -368,7 +371,7 @@ plcContainerConf *plc_get_container_config(char *name) {
     return result;
 }
 
-char *get_sharing_options(plcContainerConf *conf, int container_slot, bool *has_error) {
+char *get_sharing_options(plcContainerConf *conf, int container_slot, bool *has_error, char **uds_dir) {
     char *res = NULL;
 
 	*has_error = false;
@@ -407,20 +410,19 @@ char *get_sharing_options(plcContainerConf *conf, int container_slot, bool *has_
                 comma = ',';
 			/* Directory for QE : IPC_GPDB_BASE_DIR + "." + PID + "." + container_slot */
 			int gpdb_dir_sz;
-			char *uds_dir;
 
-			gpdb_dir_sz = strlen(IPC_GPDB_BASE_DIR) + 1 + 16 + 1 + 4 + 1;
-			uds_dir = pmalloc(gpdb_dir_sz);
-			sprintf(uds_dir, "%s.%d.%d", IPC_GPDB_BASE_DIR, getpid(), container_slot);
+			gpdb_dir_sz = strlen(IPC_GPDB_BASE_DIR) + 1 + 16 + 1 + 16 + 1 + 4 + 1;
+			*uds_dir = pmalloc(gpdb_dir_sz);
+			sprintf(*uds_dir, "%s.%d.%d.%d", IPC_GPDB_BASE_DIR, getpid(), domain_socket_no++, container_slot);
 			volumes[i] = pmalloc(10 + gpdb_dir_sz + strlen(IPC_CLIENT_DIR));
-			sprintf(volumes[i], " %c\"%s:%s:rw\"", comma, uds_dir, IPC_CLIENT_DIR);
+			sprintf(volumes[i], " %c\"%s:%s:rw\"", comma, *uds_dir, IPC_CLIENT_DIR);
             totallen += strlen(volumes[i]);
 
 			/* Create the directory. */
-			if (mkdir(uds_dir, S_IRWXU) < 0 && errno != EEXIST) {
+			if (mkdir(*uds_dir, S_IRWXU) < 0 && errno != EEXIST) {
 				snprintf(api_error_message, sizeof(api_error_message),
 						"PLContainer: Cannot create directory %s: %s",
-						uds_dir, strerror(errno));
+						*uds_dir, strerror(errno));
 				*has_error = true;
 				return NULL;
 			}
